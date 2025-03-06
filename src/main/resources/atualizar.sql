@@ -19,10 +19,9 @@ create table client(
 );
 
 create table laboratorio(
-    id bigint not null,
+    id uuid not null,
     nome varchar(255) not null,
 
     constraint pk_laboratorio_id primary key (id)
 );
 
-CREATE SEQUENCE laboratorio_seq START 1;
