@@ -4,7 +4,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.uespi.reservalab.dto.UsuarioDTO;
 import com.uespi.reservalab.models.Usuario;
-import com.uespi.reservalab.security.SecurityService;
 import com.uespi.reservalab.services.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,15 +29,6 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
 
     private final PasswordEncoder passwordEncoder;
-
-    private final SecurityService securityService;
-
-    // @PostMapping
-    // @ResponseStatus(HttpStatus.CREATED)
-    // public void cadastrarUsuario(@RequestBody Usuario usuario) throws Exception {
-    // usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
-    // usuarioService.salvar(usuario);
-    // }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -76,9 +67,8 @@ public class UsuarioController {
     }
 
     @GetMapping()
-    public List<Usuario> findAllUsuarios(Authentication authentication) {
-        System.out.println("usuario logado: " + securityService.getUsuarioLogado().getNome());
-        return usuarioService.findAll();
+    public ResponseEntity<List<Usuario>> findAllUsuarios(Authentication authentication) {
+        return ResponseEntity.ok(usuarioService.findAll());
     }
 
 }

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,8 +44,8 @@ public class ClientController {
     }
 
     @GetMapping
-    public List<Client> findAllClient() {
-        return clientService.findAllClient();
+    public ResponseEntity<List<Client>> findAllClient() {
+        return ResponseEntity.ok(clientService.findAllClient());
     }
 
 }

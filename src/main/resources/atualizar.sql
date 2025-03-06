@@ -17,3 +17,12 @@ create table client(
 
     constraint pk_client_id primary key (id)
 );
+
+create table laboratorio(
+    id bigint not null,
+    nome varchar(255) not null,
+
+    constraint pk_laboratorio_id primary key (id)
+);
+
+CREATE SEQUENCE laboratorio_seq START 1;

@@ -1,10 +1,6 @@
 package com.uespi.reservalab.models;
 
-import java.io.Serializable;
-import java.util.List;
 import java.util.UUID;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,15 +10,10 @@ import lombok.Data;
 
 @Entity
 @Data
-public class Usuario implements Serializable {
+public class Laboratorio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    private String login;
-    @JsonIgnore
-    private String senha;
     private String nome;
-    private List<String> authorities;
-
 }
