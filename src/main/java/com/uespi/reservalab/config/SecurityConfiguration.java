@@ -2,6 +2,7 @@ package com.uespi.reservalab.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,6 +34,7 @@ public class SecurityConfiguration {
                     authorize.requestMatchers("/teste/admin").hasAuthority("ADMIN");
                     authorize.requestMatchers("/teste/professorComp").hasAuthority("PROF_COMP");
                     authorize.requestMatchers("/teste/professor").hasAuthority("PROF");
+                    authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**").hasAuthority("ADMIN");
                     authorize.anyRequest().authenticated();
                 })
                 .oauth2ResourceServer(oauth2Rs -> oauth2Rs.jwt(Customizer.withDefaults()))

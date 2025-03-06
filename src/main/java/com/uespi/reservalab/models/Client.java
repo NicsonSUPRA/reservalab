@@ -1,5 +1,6 @@
 package com.uespi.reservalab.models;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -11,7 +12,7 @@ import lombok.Data;
 
 @Entity
 @Data
-public class Client {
+public class Client implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
