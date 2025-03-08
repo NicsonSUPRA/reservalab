@@ -19,9 +19,10 @@ create table client(
 );
 
 create table laboratorio(
-    id uuid not null,
+    id bigint not null,
     nome varchar(255) not null,
-
+    
     constraint pk_laboratorio_id primary key (id)
 );
-
+create sequence seq_laboratorio minvalue 1;
+ALTER TABLE laboratorio ALTER COLUMN id SET DEFAULT nextval('seq_laboratorio');
