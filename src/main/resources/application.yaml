@@ -7,6 +7,6 @@ spring:
     hibernate:
       ddl-auto: none
   datasource:
-    url: 
-    username: 
-    password: 
+    url: jdbc:postgresql://localhost:5432/reservalab
+    username: postgres
+    password: talikdnt123

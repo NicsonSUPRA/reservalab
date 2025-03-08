@@ -20,7 +20,6 @@ public class Usuario implements Serializable {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     private String login;
-    @JsonIgnore
     private String senha;
     private String nome;
     private List<String> authorities;

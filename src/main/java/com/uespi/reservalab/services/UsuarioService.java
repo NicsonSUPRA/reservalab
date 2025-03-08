@@ -1,6 +1,7 @@
 package com.uespi.reservalab.services;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -24,12 +25,20 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    public void atualizar(Usuario usuario) {
+        usuarioRepository.save(usuario);
+    }
+
     public Usuario obterUsuarioPorLogin(String login) {
         return usuarioRepository.findByLogin(login);
     }
 
     public List<Usuario> findAll() {
         return usuarioRepository.findAll();
+    }
+
+    public Usuario obterUsuarioPorId(UUID id) {
+        return usuarioRepository.findById(id).orElse(null);
     }
 
 }

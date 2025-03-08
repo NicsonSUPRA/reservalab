@@ -8,18 +8,21 @@ import com.uespi.reservalab.services.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("usuarios")
@@ -66,9 +69,21 @@ public class UsuarioController {
         usuarioService.salvar(usuario);
     }
 
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void atualizarUsuario(@PathVariable String id, @RequestBody Usuario usuario) {
+        usuarioService.atualizar(usuario);
+    }
+
     @GetMapping()
     public ResponseEntity<List<Usuario>> findAllUsuarios(Authentication authentication) {
         return ResponseEntity.ok(usuarioService.findAll());
+    }
+
+    @GetMapping("{id}")
+    public Usuario buscarPorId(@PathVariable("id") String id) {
+        UUID uuid = UUID.fromString(id);
+        return usuarioService.obterUsuarioPorId(uuid);
     }
 
 }

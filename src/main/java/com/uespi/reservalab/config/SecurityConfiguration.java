@@ -31,9 +31,6 @@ public class SecurityConfiguration {
                     authorize.requestMatchers("/login/**").permitAll();
                     authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
                     authorize.requestMatchers("/clients/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers("/teste/admin").hasAuthority("ADMIN");
-                    authorize.requestMatchers("/teste/professorComp").hasAuthority("PROF_COMP");
-                    authorize.requestMatchers("/teste/professor").hasAuthority("PROF");
                     authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**").hasAuthority("ADMIN");
                     authorize.anyRequest().authenticated();
                 })
