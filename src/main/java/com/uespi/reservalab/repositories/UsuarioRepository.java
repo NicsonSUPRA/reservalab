@@ -11,4 +11,6 @@ import com.uespi.reservalab.models.Usuario;
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
     public Usuario findByLogin(String login);
+
+    public boolean existsByLogin(String login);
 }
