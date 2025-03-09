@@ -16,6 +16,8 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/laboratorios")
@@ -33,6 +35,16 @@ public class LaboratorioController {
     @GetMapping
     public ResponseEntity<List<Laboratorio>> getMethodName() {
         return ResponseEntity.ok(laboratorioService.findAll());
+    }
+
+    @PutMapping("/{id}")
+    public void atualizar(@PathVariable Long id, @RequestBody Laboratorio laboratorio) {
+        laboratorioService.atualizar(laboratorio);
+    }
+
+    @GetMapping("/{id}")
+    public Laboratorio obterLaboratorioPorId(@PathVariable Long id) {
+        return laboratorioService.obterLaboratorioPorId(id);
     }
 
 }

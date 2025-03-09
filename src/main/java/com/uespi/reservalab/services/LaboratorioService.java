@@ -19,7 +19,15 @@ public class LaboratorioService {
         laboratorioRepository.save(laboratorio);
     }
 
+    public void atualizar(Laboratorio laboratorio) {
+        laboratorioRepository.save(laboratorio);
+    }
+
     public List<Laboratorio> findAll() {
         return laboratorioRepository.findAll();
+    }
+
+    public Laboratorio obterLaboratorioPorId(Long id) {
+        return laboratorioRepository.findById(id).orElse(null);
     }
 }
