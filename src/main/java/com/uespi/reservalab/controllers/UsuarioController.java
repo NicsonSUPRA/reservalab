@@ -86,4 +86,9 @@ public class UsuarioController {
         return usuarioService.obterUsuarioPorId(uuid);
     }
 
+    @GetMapping("/nome/{nome}")
+    public ResponseEntity<List<Usuario>> getMethodName(@PathVariable("nome") String nome) {
+        return ResponseEntity.ok().body(usuarioService.obterUsuarioComNomeSemelhante(nome));
+    }
+
 }

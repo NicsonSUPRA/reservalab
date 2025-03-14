@@ -26,3 +26,16 @@ create table laboratorio(
 );
 create sequence seq_laboratorio minvalue 1;
 ALTER TABLE laboratorio ALTER COLUMN id SET DEFAULT nextval('seq_laboratorio');
+
+
+--UTIL PARA TRANSAÇÕES DIRETAS NO BANCO DE DADOS DE PRODUÇÃO
+begin;
+update laboratorio set nome = 'laboratorio ufdpar' where id = 4;
+
+--EXECUTE O BEGGIN E LOGO EM SEGUIDA A SEQUENCIA VERIFIQUE SE A ALTERAÇÃO FOI FEITA CORRETAMENTE
+select * from laboratorio
+
+--CASO DE ERRADO EXECUTE O ROWBACK, ELE IRA DESAFZER A ALTERAÇÃO FEITA APÓS O BEGGIN
+ROLLBACK;
+--CASO ESTEJA TUDO DE ACORDO EXECUTE O COMMIT, ELE IRA SALVAR A ALTERAÇÃO FEITA APÓS O BEGGIN
+COMMIT;
