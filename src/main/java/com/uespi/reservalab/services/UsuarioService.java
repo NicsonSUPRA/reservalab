@@ -42,4 +42,8 @@ public class UsuarioService {
         return usuarioRepository.findById(id).orElse(null);
     }
 
+    public List<Usuario> obterUsuarioComNomeSemelhante(String nome) {
+        return usuarioRepository.obterUsuarioComNomeSemelhante("%" + nome + "%");
+    }
+
 }
