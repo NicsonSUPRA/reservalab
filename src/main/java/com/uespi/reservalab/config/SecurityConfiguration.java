@@ -29,9 +29,11 @@ public class SecurityConfiguration {
                 .formLogin(configurer -> configurer.loginPage("/login"))
                 .authorizeHttpRequests(authorize -> {
                     authorize.requestMatchers("/login/**").permitAll();
+                    // authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
                     authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
                     authorize.requestMatchers("/clients/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**").hasAuthority("ADMIN");
+                    authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**").hasAnyAuthority("ADMIN",
+                            "PROF_COMP");
                     authorize.anyRequest().authenticated();
                 })
                 .oauth2ResourceServer(oauth2Rs -> oauth2Rs.jwt(Customizer.withDefaults()))
