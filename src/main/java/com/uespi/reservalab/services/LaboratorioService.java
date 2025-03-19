@@ -18,12 +18,10 @@ public class LaboratorioService {
 
     @Transactional
     public void salvar(Laboratorio laboratorio) {
-
-        laboratorioRepository.save(laboratorio);
-
         if (laboratorioRepository.obterLaboratorioComNomeIgual(laboratorio.getNome()).size() > 0) {
             throw new IllegalArgumentException("Já existe um laboratório com esse nome");
         }
+        laboratorioRepository.save(laboratorio);
     }
 
     @Transactional
