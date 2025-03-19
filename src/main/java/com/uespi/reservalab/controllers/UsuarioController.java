@@ -2,8 +2,11 @@ package com.uespi.reservalab.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.uespi.reservalab.annotations.ClientDefault;
 import com.uespi.reservalab.dto.UsuarioDTO;
+import com.uespi.reservalab.models.Client;
 import com.uespi.reservalab.models.Usuario;
+import com.uespi.reservalab.services.ClientService;
 import com.uespi.reservalab.services.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,17 +34,32 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
+    private final ClientService clientService;
+
     private final PasswordEncoder passwordEncoder;
+
+    @ClientDefault
+    private final Client clientDefault;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @RequestMapping("/admin")
     public void cadastrarUsuarioAdmin(@RequestBody UsuarioDTO usuarioDTO) throws Exception {
         Usuario usuario = new Usuario();
+        Client client = clientDefault;
+
         usuario.setNome(usuarioDTO.getNome());
         usuario.setLogin(usuarioDTO.getLogin());
         usuario.setAuthorities(Arrays.asList("ADMIN"));
         usuario.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
+
+        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null) {
+            throw new Exception("Client já cadastrado");
+        }
+        client.setClientId(usuarioDTO.getClientId());
+        client.setClientSecret(passwordEncoder.encode(usuarioDTO.getClientSecret()));
+
+        usuario.setClient(client);
         usuarioService.salvar(usuario);
     }
 
@@ -50,10 +68,20 @@ public class UsuarioController {
     @RequestMapping("/professorComputacao")
     public void cadastrarUsuarioProfessorComputacao(@RequestBody UsuarioDTO usuarioDTO) throws Exception {
         Usuario usuario = new Usuario();
+        Client client = clientDefault;
+
         usuario.setNome(usuarioDTO.getNome());
         usuario.setLogin(usuarioDTO.getLogin());
         usuario.setAuthorities(Arrays.asList("PROF_COMP"));
         usuario.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
+
+        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null) {
+            throw new Exception("Client já cadastrado");
+        }
+        client.setClientId(usuarioDTO.getClientId());
+        client.setClientSecret(passwordEncoder.encode(usuarioDTO.getClientSecret()));
+
+        usuario.setClient(client);
         usuarioService.salvar(usuario);
     }
 
@@ -62,10 +90,20 @@ public class UsuarioController {
     @RequestMapping("/professor")
     public void cadastrarUsuarioProfessor(@RequestBody UsuarioDTO usuarioDTO) throws Exception {
         Usuario usuario = new Usuario();
+        Client client = clientDefault;
+
         usuario.setNome(usuarioDTO.getNome());
         usuario.setLogin(usuarioDTO.getLogin());
         usuario.setAuthorities(Arrays.asList("PROF"));
         usuario.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
+
+        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null) {
+            throw new Exception("Client já cadastrado");
+        }
+        client.setClientId(usuarioDTO.getClientId());
+        client.setClientSecret(passwordEncoder.encode(usuarioDTO.getClientSecret()));
+
+        usuario.setClient(client);
         usuarioService.salvar(usuario);
     }
 

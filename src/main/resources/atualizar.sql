@@ -3,11 +3,12 @@ create table usuario(
     login varchar(255) not null,
     senha varchar(255) not null,
     nome varchar(255) not null,
+    client_id uuid,
     authorities varchar[],
 
-    constraint pk_usuario_id primary key (id)
+    constraint pk_usuario_id primary key (id),
+    constraint fk_client_id foreign key (client_id) references client(id)
 );
-
 create table client(
     id uuid not null,
     client_id varchar(255) not null,

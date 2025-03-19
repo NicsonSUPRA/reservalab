@@ -11,4 +11,6 @@ public class UsuarioDTO {
     private String login;
     private String nome;
     private String senha;
+    private String clientId;
+    private String clientSecret;
 }
