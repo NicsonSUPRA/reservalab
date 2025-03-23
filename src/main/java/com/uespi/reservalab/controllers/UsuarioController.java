@@ -1,6 +1,7 @@
 package com.uespi.reservalab.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.uespi.reservalab.annotations.ClientDefault;
 import com.uespi.reservalab.dto.UsuarioDTO;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -44,7 +46,7 @@ public class UsuarioController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @RequestMapping("/admin")
-    public void cadastrarUsuarioAdmin(@RequestBody UsuarioDTO usuarioDTO) throws Exception {
+    public ResponseEntity<Void> cadastrarUsuarioAdmin(@RequestBody UsuarioDTO usuarioDTO) throws Exception {
         Usuario usuario = new Usuario();
         Client client = clientDefault;
 
@@ -61,6 +63,21 @@ public class UsuarioController {
 
         usuario.setClient(client);
         usuarioService.salvar(usuario);
+
+        // System.out.println("Conteúdo do
+        // ServletUriComponentsBuilder.fromCurrentRequest().toString(): "
+        // + ServletUriComponentsBuilder.fromCurrentRequest().toUriString());
+        // System.out.println("Conteúdo do
+        // ServletUriComponentsBuilder.fromCurrentRequest().toString(): "
+        // +
+        // ServletUriComponentsBuilder.fromCurrentRequest().replacePath("/usuarios").toUriString());
+        // http://localhost:8080/usuarios/admin
+
+        // CONSTRUINDO A URI PARA REALIZAR O GET DO USUARIO CADASTRADO POR ID
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().replacePath("/usuarios").path("/{id}")
+                .buildAndExpand(usuario.getId()).toUri();
+
+        return ResponseEntity.created(location).build();
     }
 
     @PostMapping
@@ -119,9 +136,13 @@ public class UsuarioController {
     }
 
     @GetMapping("{id}")
-    public Usuario buscarPorId(@PathVariable("id") String id) {
+    public ResponseEntity<Usuario> buscarPorId(@PathVariable("id") String id) {
         UUID uuid = UUID.fromString(id);
-        return usuarioService.obterUsuarioPorId(uuid);
+        Usuario usuario = usuarioService.obterUsuarioPorId(uuid);
+        if (usuario != null) {
+            return ResponseEntity.ok().body(usuario);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/nome/{nome}")

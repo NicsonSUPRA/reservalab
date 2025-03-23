@@ -10,4 +10,3 @@ spring:
     url: jdbc:postgresql://localhost:5433/reservalab
     username: postgres
     password: postgres
-
