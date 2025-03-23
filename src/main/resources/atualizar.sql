@@ -22,8 +22,12 @@ create table client(
 create table laboratorio(
     id bigint not null,
     nome varchar(255) not null,
+    data_cadastro timestamp not null,
+    data_atualizacao timestamp not null,
+    -- usuario_id not null,
     
-    constraint pk_laboratorio_id primary key (id)
+    constraint pk_laboratorio_id primary key (id),
+    -- constraint fk_usuario_id foreign key (usuario_id) references usuario(id)
 );
 create sequence seq_laboratorio minvalue 1;
 ALTER TABLE laboratorio ALTER COLUMN id SET DEFAULT nextval('seq_laboratorio');
