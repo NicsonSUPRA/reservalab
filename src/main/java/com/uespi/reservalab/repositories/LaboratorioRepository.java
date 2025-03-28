@@ -24,4 +24,7 @@ public interface LaboratorioRepository extends JpaRepository<Laboratorio, Long> 
     @Query("SELECT l from Laboratorio l where l.nome = :nome")
     public List<Laboratorio> obterLaboratorioComNomeIgual(@Param("nome") String nome);
 
+    @Query("SELECT l from Laboratorio l where lower(l.nome) like lower(concat(:nome))")
+    public List<Laboratorio> obterLaboratoriosComNomesSemelhantes(@Param("nome") String nome);
+
 }

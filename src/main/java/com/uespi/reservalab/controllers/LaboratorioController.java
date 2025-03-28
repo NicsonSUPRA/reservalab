@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/laboratorios")
@@ -34,7 +35,10 @@ public class LaboratorioController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Laboratorio>> findAll() {
+    public ResponseEntity<List<Laboratorio>> findAll(@RequestParam(value = "nome", required = false) String nome) {
+        if (nome != null) {
+            return ResponseEntity.ok(laboratorioService.obterLaboratoriosComNomesSemelhantes(nome));
+        }
         return ResponseEntity.ok(laboratorioService.findAll());
     }
 
@@ -53,4 +57,11 @@ public class LaboratorioController {
     public void deletarLaboratorio(@PathVariable Long id) {
         laboratorioService.deletarLaboratorioPorId(id);
     }
+
+    // @GetMapping
+    // public ResponseEntity<List<Laboratorio>>
+    // pesquisarPorFiltro(@RequestParam(value = "nome", ) String param) {
+    // return new String();
+    // }
+
 }

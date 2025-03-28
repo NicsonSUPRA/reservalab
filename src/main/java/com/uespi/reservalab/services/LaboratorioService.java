@@ -59,4 +59,8 @@ public class LaboratorioService {
         laboratorioRepository.deletarLaboratorioPorId(id);
     }
 
+    public List<Laboratorio> obterLaboratoriosComNomesSemelhantes(String nome) {
+        return laboratorioRepository.obterLaboratoriosComNomesSemelhantes("%" + nome + "%");
+    }
+
 }
