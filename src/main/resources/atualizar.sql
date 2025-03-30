@@ -33,6 +33,17 @@ create sequence seq_laboratorio minvalue 1;
 ALTER TABLE laboratorio ALTER COLUMN id SET DEFAULT nextval('seq_laboratorio');
 
 
+create table semestre(
+	id bigint not null,
+	data_inicio timestamp not null,
+	data_fim timestamp not null,
+
+	constraint pk_semestre_id primary key (id)
+);
+
+create sequence seq_semestre minvalue 1;
+ALTER TABLE semestre ALTER COLUMN id SET DEFAULT nextval('seq_semestre');
+
 --UTIL PARA TRANSAÇÕES DIRETAS NO BANCO DE DADOS DE PRODUÇÃO
 begin;
 update laboratorio set nome = 'laboratorio ufdpar' where id = 4;

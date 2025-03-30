@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.net.URI;
@@ -124,11 +125,28 @@ public class UsuarioController {
         usuarioService.salvar(usuario);
     }
 
-    @PutMapping("/{id}")
+    // put que atuiliza o usuario via parametro param
+    @PutMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void atualizarUsuario(@PathVariable String id, @RequestBody Usuario usuario) {
-        usuarioService.atualizar(usuario);
+    public ResponseEntity<Void> atualizarUsuario(@RequestParam("id") String id,
+            @RequestBody UsuarioDTO usuario) {
+        Usuario usuarioRetornado = usuarioService.obterUsuarioPorId(UUID.fromString(id));
+
+        if (usuarioRetornado == null) {
+            return ResponseEntity.notFound().build();
+        }
+        usuarioRetornado.setNome(usuario.getNome());
+        usuarioService.atualizar(usuarioRetornado);
+        return ResponseEntity.noContent().build();
     }
+
+    // o metodo abaixo tambem atualiza mas o id é passado na url
+    // @PutMapping("/{id}")
+    // @ResponseStatus(HttpStatus.NO_CONTENT)
+    // public void atualizarUsuario(@PathVariable String id, @RequestBody Usuario
+    // usuario) {
+    // usuarioService.atualizar(usuario);
+    // }
 
     @GetMapping()
     public ResponseEntity<List<Usuario>> findAllUsuarios(Authentication authentication) {

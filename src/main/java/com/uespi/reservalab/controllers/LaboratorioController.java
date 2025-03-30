@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.uespi.reservalab.exceptions.RegistroDuplicadoException;
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.services.LaboratorioService;
 
@@ -30,8 +31,14 @@ public class LaboratorioController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void cadastrarLaboratorio(@RequestBody Laboratorio laboratorio) {
-        laboratorioService.salvar(laboratorio);
+    public ResponseEntity<String> cadastrarLaboratorio(@RequestBody Laboratorio laboratorio) {
+        try {
+            laboratorioService.salvar(laboratorio);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Laboratório cadastrado com sucesso!");
+        } catch (RegistroDuplicadoException e) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(e.getMessage());
+        }
+
     }
 
     @GetMapping
@@ -44,6 +51,7 @@ public class LaboratorioController {
 
     @PutMapping("/{id}")
     public void atualizar(@PathVariable Long id, @RequestBody Laboratorio laboratorio) {
+
         laboratorioService.atualizar(laboratorio);
     }
 

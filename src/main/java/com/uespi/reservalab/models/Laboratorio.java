@@ -1,5 +1,6 @@
 package com.uespi.reservalab.models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -17,7 +18,7 @@ import lombok.Data;
 @Entity
 @Data
 @EntityListeners(AuditingEntityListener.class)
-public class Laboratorio {
+public class Laboratorio implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
