@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.repositories.LaboratorioRepository;
+import com.uespi.reservalab.validators.LaboratorioValidator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,21 +17,30 @@ public class LaboratorioService {
 
     private final LaboratorioRepository laboratorioRepository;
 
+    private final LaboratorioValidator validator;
+
     @Transactional
     public void salvar(Laboratorio laboratorio) {
-        if (laboratorioRepository.obterLaboratorioComNomeIgual(laboratorio.getNome()).size() > 0) {
-            throw new IllegalArgumentException("Já existe um laboratório com esse nome");
-        }
+        // if
+        // (laboratorioRepository.obterLaboratorioComNomeIgual(laboratorio.getNome()).size()
+        // > 0) {
+        // throw new RegistroDuplicadoException("Já existe um laboratório com esse
+        // nome");
+        // }
+
+        // o validator abaixo faz a mesma coisa que o codigo comentado acima, mas foi
+        // implementado para seguir a regra do
+        // CLEAN CODE, que é a responsabilidade única.
+        validator.validarLaboratorio(laboratorio);
+
         laboratorioRepository.save(laboratorio);
     }
 
     @Transactional
     public void atualizar(Laboratorio laboratorio) {
+        validator.validarLaboratorio(laboratorio);
         laboratorioRepository.save(laboratorio);
 
-        if (laboratorioRepository.obterLaboratorioComNomeIgual(laboratorio.getNome()).size() > 0) {
-            throw new IllegalArgumentException("Já existe um laboratório com esse nome");
-        }
     }
 
     @Transactional
