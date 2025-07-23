@@ -29,7 +29,6 @@ public class SecurityConfiguration {
                 .formLogin(configurer -> configurer.loginPage("/login"))
                 .authorizeHttpRequests(authorize -> {
                     authorize.requestMatchers("/login/**").permitAll();
-                    // authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
                     authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
                     authorize.requestMatchers("/clients/**").hasAuthority("ADMIN");
                     authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**").hasAnyAuthority("ADMIN",

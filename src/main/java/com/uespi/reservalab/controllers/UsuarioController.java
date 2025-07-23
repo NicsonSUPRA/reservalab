@@ -5,6 +5,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.uespi.reservalab.annotations.ClientDefault;
 import com.uespi.reservalab.dto.UsuarioDTO;
+import com.uespi.reservalab.exceptions.RegistroDuplicadoException;
 import com.uespi.reservalab.models.Client;
 import com.uespi.reservalab.models.Usuario;
 import com.uespi.reservalab.services.ClientService;
@@ -47,7 +48,7 @@ public class UsuarioController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @RequestMapping("/admin")
-    public ResponseEntity<Void> cadastrarUsuarioAdmin(@RequestBody UsuarioDTO usuarioDTO) throws Exception {
+    public ResponseEntity<Void> cadastrarUsuarioAdmin(@RequestBody UsuarioDTO usuarioDTO) {
         Usuario usuario = new Usuario();
         Client client = clientDefault;
 
@@ -56,8 +57,9 @@ public class UsuarioController {
         usuario.setAuthorities(Arrays.asList("ADMIN"));
         usuario.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
 
-        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null) {
-            throw new Exception("Client já cadastrado");
+        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null
+                || usuarioService.obterUsuarioPorLogin(usuarioDTO.getLogin()) != null) {
+            throw new RegistroDuplicadoException("Credenciais inválidas, tente outro");
         }
         client.setClientId(usuarioDTO.getClientId());
         client.setClientSecret(passwordEncoder.encode(usuarioDTO.getClientSecret()));
@@ -93,9 +95,11 @@ public class UsuarioController {
         usuario.setAuthorities(Arrays.asList("PROF_COMP"));
         usuario.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
 
-        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null) {
-            throw new Exception("Client já cadastrado");
+        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null
+                || usuarioService.obterUsuarioPorLogin(usuarioDTO.getLogin()) != null) {
+            throw new RegistroDuplicadoException("Credenciais inválidas, tente outro");
         }
+
         client.setClientId(usuarioDTO.getClientId());
         client.setClientSecret(passwordEncoder.encode(usuarioDTO.getClientSecret()));
 
@@ -115,9 +119,11 @@ public class UsuarioController {
         usuario.setAuthorities(Arrays.asList("PROF"));
         usuario.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
 
-        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null) {
-            throw new Exception("Client já cadastrado");
+        if (clientService.obterClientByClientId(usuarioDTO.getClientId()) != null
+                || usuarioService.obterUsuarioPorLogin(usuarioDTO.getLogin()) != null) {
+            throw new RegistroDuplicadoException("Credenciais inválidas, tente outro");
         }
+
         client.setClientId(usuarioDTO.getClientId());
         client.setClientSecret(passwordEncoder.encode(usuarioDTO.getClientSecret()));
 

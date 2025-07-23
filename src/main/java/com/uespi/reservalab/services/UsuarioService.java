@@ -19,7 +19,7 @@ public class UsuarioService {
 
     private final UsuarioValodator usuarioValodator;
 
-    public void salvar(Usuario usuario) throws Exception {
+    public void salvar(Usuario usuario) {
 
         usuarioValodator.validar(usuario);
 

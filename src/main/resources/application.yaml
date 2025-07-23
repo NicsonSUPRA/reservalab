@@ -1,6 +1,12 @@
 spring:
   application:
     name: reservalab
+  security:
+    oauth2:
+      client:
+        provider:
+          my-client:
+            authorization-uri: http://localhost:8080/oauth2/authorize
   jpa:
     database: postgresql
     show-sql: true
