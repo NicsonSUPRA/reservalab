@@ -34,9 +34,9 @@ public class LaboratorioController {
     public ResponseEntity<String> cadastrarLaboratorio(@RequestBody Laboratorio laboratorio) {
         try {
             laboratorioService.salvar(laboratorio);
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Laboratório cadastrado com sucesso!");
+            return ResponseEntity.status(HttpStatus.CREATED).body("Laboratório cadastrado com sucesso!");
         } catch (RegistroDuplicadoException e) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
 
     }
@@ -50,9 +50,13 @@ public class LaboratorioController {
     }
 
     @PutMapping("/{id}")
-    public void atualizar(@PathVariable Long id, @RequestBody Laboratorio laboratorio) {
+    public ResponseEntity<Laboratorio> atualizar(
+            @PathVariable Long id,
+            @RequestBody Laboratorio laboratorio) {
 
-        laboratorioService.atualizar(laboratorio);
+        laboratorio.setId(id); // garante que o ID do path será usado
+        Laboratorio atualizado = laboratorioService.atualizar(laboratorio);
+        return ResponseEntity.ok(atualizado);
     }
 
     @GetMapping("/{id}")
@@ -66,10 +70,9 @@ public class LaboratorioController {
         laboratorioService.deletarLaboratorioPorId(id);
     }
 
-    // @GetMapping
-    // public ResponseEntity<List<Laboratorio>>
-    // pesquisarPorFiltro(@RequestParam(value = "nome", ) String param) {
-    // return new String();
-    // }
+    @GetMapping("/pesquisar")
+    public ResponseEntity<List<Laboratorio>> pesquisarPorFiltro(@RequestParam(value = "nome") String param) {
+        return ResponseEntity.ok(laboratorioService.obterLaboratoriosComNomesSemelhantes(param));
+    }
 
 }

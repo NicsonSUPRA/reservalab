@@ -9,6 +9,7 @@ import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.repositories.LaboratorioRepository;
 import com.uespi.reservalab.validators.LaboratorioValidator;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -37,10 +38,16 @@ public class LaboratorioService {
     }
 
     @Transactional
-    public void atualizar(Laboratorio laboratorio) {
+    public Laboratorio atualizar(Laboratorio laboratorio) {
         validator.validarLaboratorio(laboratorio);
-        laboratorioRepository.save(laboratorio);
 
+        Laboratorio existente = laboratorioRepository.findById(laboratorio.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Laboratório não encontrado"));
+
+        // Preserva data_cadastro e outros campos que não devem ser alterados
+        laboratorio.setDataCadastro(existente.getDataCadastro());
+
+        return laboratorioRepository.save(laboratorio);
     }
 
     @Transactional

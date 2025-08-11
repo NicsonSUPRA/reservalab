@@ -33,6 +33,8 @@ public class SecurityConfiguration {
                     authorize.requestMatchers("/clients/**").hasAuthority("ADMIN");
                     authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**").hasAnyAuthority("ADMIN",
                             "PROF_COMP");
+                    authorize.requestMatchers(HttpMethod.GET, "/laboratorios/**").hasAnyAuthority("ADMIN", "PROF_COMP",
+                            "PROFESSOR");
                     authorize.anyRequest().authenticated();
                 })
                 .oauth2ResourceServer(oauth2Rs -> oauth2Rs.jwt(Customizer.withDefaults()))
