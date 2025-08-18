@@ -21,4 +21,9 @@ public class Semestre implements Serializable {
 
     private LocalDateTime dataFim;
 
+    private Integer ano;
+
+    private Integer periodo;
+
+    private String descricao;
 }
