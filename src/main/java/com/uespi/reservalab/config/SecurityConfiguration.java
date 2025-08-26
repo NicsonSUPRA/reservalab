@@ -23,22 +23,35 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
             JwtCustomAuthenticationFilter jwtCustomAuthenticationFilter) throws Exception {
+
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(Customizer.withDefaults())
                 .formLogin(configurer -> configurer.loginPage("/login"))
                 .authorizeHttpRequests(authorize -> {
+
                     authorize.requestMatchers("/login/**").permitAll();
+
                     authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
                     authorize.requestMatchers("/clients/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**").hasAnyAuthority("ADMIN",
-                            "PROF_COMP");
-                    authorize.requestMatchers(HttpMethod.GET, "/laboratorios/**").hasAnyAuthority("ADMIN", "PROF_COMP",
-                            "PROFESSOR");
+
+                    authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**")
+                            .hasAnyAuthority("ADMIN", "PROF_COMP");
+                    authorize.requestMatchers(HttpMethod.GET, "/laboratorios/**")
+                            .hasAnyAuthority("ADMIN", "PROF_COMP", "PROFESSOR");
+
+                    authorize.requestMatchers(HttpMethod.GET, "/semestre/**").authenticated();
+                    authorize.requestMatchers(HttpMethod.POST, "/semestre/**").hasAuthority("ADMIN");
+                    authorize.requestMatchers(HttpMethod.PUT, "/semestre/**").hasAuthority("ADMIN");
+                    authorize.requestMatchers(HttpMethod.DELETE, "/semestre/**").hasAuthority("ADMIN");
+
                     authorize.anyRequest().authenticated();
                 })
+
                 .oauth2ResourceServer(oauth2Rs -> oauth2Rs.jwt(Customizer.withDefaults()))
+
                 .addFilterAfter(jwtCustomAuthenticationFilter, BearerTokenAuthenticationFilter.class)
+
                 .build();
     }
 
