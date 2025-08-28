@@ -51,6 +51,26 @@ alter table semestre
 alter column id
 set default nextval('seq_semestre');
 
+create table reserva (
+    id bigint not null,
+    data_inicio timestamp not null,
+    data_fim timestamp not null,
+    status varchar(20) not null,
+    usuario_id uuid not null,
+    laboratorio_id bigint not null,
+    semestre_id bigint not null,
+    constraint pk_reserva_id primary key (id),
+    constraint fk_reserva_usuario foreign key (usuario_id) references usuario (id),
+    constraint fk_reserva_laboratorio foreign key (laboratorio_id) references laboratorio (id),
+    constraint fk_reserva_semestre foreign key (semestre_id) references semestre (id)
+);
+
+create sequence seq_reserva start 1 increment 1 minvalue 1;
+
+alter table reserva
+alter column id
+set default nextval('seq_reserva');
+
 --UTIL PARA TRANSAÇÕES DIRETAS NO BANCO DE DADOS DE PRODUÇÃO
 begin;
 
