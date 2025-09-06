@@ -13,6 +13,9 @@ spring:
     hibernate:
       ddl-auto: none
   datasource:
-    url: jdbc:postgresql://localhost:5433/reservalab
+    url: ${DATABASE_URL} # ou jdbc:postgresql://localhost:5433/reservalab
     username: postgres
     password: postgres
+
+server:
+  port: 8080
