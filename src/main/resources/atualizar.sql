@@ -1,22 +1,25 @@
-create table usuario (
-    id uuid not null,
-    login varchar(255) not null,
-    senha varchar(255) not null,
-    nome varchar(255) not null,
-    client_id uuid,
-    authorities varchar[],
-    constraint pk_usuario_id primary key (id),
-    constraint fk_client_id foreign key (client_id) references client (id)
+CREATE TABLE usuario (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    login VARCHAR(255) UNIQUE NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    nome VARCHAR(255) NOT NULL
 );
 
-create table client (
-    id uuid not null,
-    client_id varchar(255) not null,
-    client_secret varchar(255) not null,
-    redirect_uri varchar(255) not null,
-    scope varchar(255) not null,
-    constraint pk_client_id primary key (id)
+CREATE TABLE usuario_roles (
+    usuario_id UUID NOT NULL,
+    roles VARCHAR(100) NOT NULL,
+    PRIMARY KEY (usuario_id, roles),
+    FOREIGN KEY (usuario_id) REFERENCES usuario (id) ON DELETE CASCADE
 );
+
+-- create table client (
+--     id uuid not null,
+--     client_id varchar(255) not null,
+--     client_secret varchar(255) not null,
+--     redirect_uri varchar(255) not null,
+--     scope varchar(255) not null,
+--     constraint pk_client_id primary key (id)
+-- );
 
 create table laboratorio (
     id bigint not null,
@@ -51,25 +54,58 @@ alter table semestre
 alter column id
 set default nextval('seq_semestre');
 
-create table reserva (
-    id bigint not null,
-    data_inicio timestamp not null,
-    data_fim timestamp not null,
-    status varchar(20) not null,
-    usuario_id uuid not null,
-    laboratorio_id bigint not null,
-    semestre_id bigint not null,
-    constraint pk_reserva_id primary key (id),
-    constraint fk_reserva_usuario foreign key (usuario_id) references usuario (id),
-    constraint fk_reserva_laboratorio foreign key (laboratorio_id) references laboratorio (id),
-    constraint fk_reserva_semestre foreign key (semestre_id) references semestre (id)
+-- create table reserva (
+--     id bigint not null,
+--     data_inicio timestamp not null,
+--     data_fim timestamp not null,
+--     status varchar(20) not null,
+--     usuario_id uuid not null,
+--     laboratorio_id bigint not null,
+--     semestre_id bigint not null,
+--     constraint pk_reserva_id primary key (id),
+--     constraint fk_reserva_usuario foreign key (usuario_id) references usuario (id),
+--     constraint fk_reserva_laboratorio foreign key (laboratorio_id) references laboratorio (id),
+--     constraint fk_reserva_semestre foreign key (semestre_id) references semestre (id)
+-- );
+
+-- create sequence seq_reserva start 1 increment 1 minvalue 1;
+
+-- alter table reserva
+-- alter column id
+-- set default nextval('seq_reserva');
+
+-- 🔹 Remover a tabela se já existir
+DROP TABLE IF EXISTS reserva CASCADE;
+
+-- 🔹 Remover a sequence se já existir
+DROP SEQUENCE IF EXISTS seq_reserva CASCADE;
+
+-- 🔹 Criar sequence para IDs
+CREATE SEQUENCE seq_reserva START 1 INCREMENT 1 MINVALUE 1;
+
+-- 🔹 Criar tabela reserva
+CREATE TABLE reserva (
+    id BIGINT NOT NULL DEFAULT nextval('seq_reserva'),
+    data_inicio TIMESTAMP,
+    data_fim TIMESTAMP,
+    status VARCHAR(20),
+    tipo VARCHAR(20), -- NORMAL ou FIXA
+    dia_semana INT, -- 1=Segunda ... 7=Domingo
+    hora_inicio TIME,
+    hora_fim TIME,
+    ativo BOOLEAN DEFAULT TRUE,
+    usuario_id UUID NOT NULL,
+    laboratorio_id BIGINT NOT NULL,
+    semestre_id BIGINT NOT NULL,
+    CONSTRAINT pk_reserva_id PRIMARY KEY (id),
+    CONSTRAINT fk_reserva_usuario FOREIGN KEY (usuario_id) REFERENCES usuario (id),
+    CONSTRAINT fk_reserva_laboratorio FOREIGN KEY (laboratorio_id) REFERENCES laboratorio (id),
+    CONSTRAINT fk_reserva_semestre FOREIGN KEY (semestre_id) REFERENCES semestre (id)
 );
 
-create sequence seq_reserva start 1 increment 1 minvalue 1;
+CREATE INDEX idx_reserva_fixa_lab_dia ON reserva_fixa (laboratorio_id, dia_semana);
 
-alter table reserva
-alter column id
-set default nextval('seq_reserva');
+CREATE INDEX idx_reserva_fixa_usuario ON reserva_fixa (usuario_id);
 
 --UTIL PARA TRANSAÇÕES DIRETAS NO BANCO DE DADOS DE PRODUÇÃO
 begin;

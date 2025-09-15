@@ -1,15 +1,15 @@
-package com.uespi.reservalab.annotations;
+// package com.uespi.reservalab.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+// import java.lang.annotation.ElementType;
+// import java.lang.annotation.Retention;
+// import java.lang.annotation.RetentionPolicy;
+// import java.lang.annotation.Target;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+// import org.springframework.beans.factory.annotation.Qualifier;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
-@Qualifier("clientDefault")
-public @interface ClientDefault {
+// @Retention(RetentionPolicy.RUNTIME)
+// @Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
+// @Qualifier("clientDefault")
+// public @interface ClientDefault {
 
-}
+// }

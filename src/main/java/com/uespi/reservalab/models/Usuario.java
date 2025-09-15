@@ -4,14 +4,17 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import org.hibernate.annotations.GenericGenerator;
+
 import lombok.Data;
 
 @Entity
@@ -19,19 +22,24 @@ import lombok.Data;
 public class Usuario implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @Column(updatable = false, nullable = false)
     private UUID id;
 
+    @Column(nullable = false, unique = true)
     private String login;
 
+    @Column(nullable = false)
+    @JsonIgnore
     private String senha;
 
+    @Column(nullable = false)
     private String nome;
 
-    private List<String> authorities;
-
-    @OneToOne(cascade = CascadeType.PERSIST)
-    @JsonIgnore
-    private Client client;
+    // ⚠️ Ajuste para não criar tabela extra
+    @ElementCollection(fetch = FetchType.EAGER)
+    // @Column(name = "roles")
+    private List<String> roles;
 
 }

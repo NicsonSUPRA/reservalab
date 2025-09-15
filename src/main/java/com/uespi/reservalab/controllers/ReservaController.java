@@ -1,5 +1,7 @@
 package com.uespi.reservalab.controllers;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -106,4 +108,21 @@ public class ReservaController {
         reservaService.cancelarReserva(id);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/laboratorio/{id}/periodo")
+    public ResponseEntity<List<Reserva>> buscarReservasPorPeriodo(
+            @PathVariable Long id,
+            @RequestParam String dataInicio,
+            @RequestParam String dataFim) {
+
+        Laboratorio laboratorio = new Laboratorio();
+        laboratorio.setId(id);
+
+        LocalDateTime inicio = LocalDateTime.parse(dataInicio, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        LocalDateTime fim = LocalDateTime.parse(dataFim, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+        List<Reserva> reservas = reservaService.buscarReservasPorPeriodo(laboratorio, inicio, fim);
+        return ResponseEntity.ok(reservas);
+    }
+
 }

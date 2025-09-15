@@ -3,17 +3,19 @@ package com.uespi.reservalab.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.uespi.reservalab.security.CustomUserDetailsService;
-import com.uespi.reservalab.security.JwtCustomAuthenticationFilter;
+import com.uespi.reservalab.security.JwtAuthorizationFilter;
 import com.uespi.reservalab.services.UsuarioService;
 
 @Configuration
@@ -21,37 +23,29 @@ import com.uespi.reservalab.services.UsuarioService;
 public class SecurityConfiguration {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-            JwtCustomAuthenticationFilter jwtCustomAuthenticationFilter) throws Exception {
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .httpBasic(Customizer.withDefaults())
-                .formLogin(configurer -> configurer.loginPage("/login"))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> {
+                    authorize.antMatchers("/usuarios/auth").permitAll();
 
-                    authorize.requestMatchers("/login/**").permitAll();
+                    authorize.antMatchers(HttpMethod.GET, "/usuarios/**")
+                            .hasAnyRole("FUNCIONARIO", "ALUNO", "PROF_COMP", "PROF", "ADMIN");
+                    authorize.antMatchers("/usuarios/**").hasRole("ADMIN");
 
-                    authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers("/clients/**").hasAuthority("ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/laboratorios/**")
+                            .hasAnyRole("FUNCIONARIO", "ALUNO", "PROF_COMP", "PROF", "ADMIN");
+                    authorize.antMatchers("/laboratorios/**").hasRole("ADMIN");
 
-                    authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**")
-                            .hasAnyAuthority("ADMIN", "PROF_COMP");
-                    authorize.requestMatchers(HttpMethod.GET, "/laboratorios/**")
-                            .hasAnyAuthority("ADMIN", "PROF_COMP", "PROFESSOR");
-
-                    authorize.requestMatchers(HttpMethod.GET, "/semestre/**").authenticated();
-                    authorize.requestMatchers(HttpMethod.POST, "/semestre/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers(HttpMethod.PUT, "/semestre/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers(HttpMethod.DELETE, "/semestre/**").hasAuthority("ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/semestre/**")
+                            .hasAnyRole("FUNCIONARIO", "ALUNO", "PROF_COMP", "PROF", "ADMIN");
+                    authorize.antMatchers("/semestre/**").hasRole("ADMIN");
 
                     authorize.anyRequest().authenticated();
                 })
-
-                .oauth2ResourceServer(oauth2Rs -> oauth2Rs.jwt(Customizer.withDefaults()))
-
-                .addFilterAfter(jwtCustomAuthenticationFilter, BearerTokenAuthenticationFilter.class)
-
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -61,8 +55,17 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(10);
+    }
+
+    @Bean
     public UserDetailsService userDetailsService(UsuarioService usuarioService) {
         return new CustomUserDetailsService(usuarioService);
     }
 
+    @Bean
+    public OncePerRequestFilter jwtFilter() {
+        return new JwtAuthorizationFilter();
+    }
 }

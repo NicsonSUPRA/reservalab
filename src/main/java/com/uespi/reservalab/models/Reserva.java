@@ -1,11 +1,13 @@
 package com.uespi.reservalab.models;
 
 import com.uespi.reservalab.enums.StatusReserva;
-import jakarta.persistence.*;
+import com.uespi.reservalab.enums.TipoReserva;
 import lombok.Data;
 
+import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @Data
@@ -21,6 +23,16 @@ public class Reserva implements Serializable {
 
     @Enumerated(EnumType.STRING)
     private StatusReserva status;
+
+    // 🔹 Tipo da reserva: NORMAL ou FIXA
+    @Enumerated(EnumType.STRING)
+    private TipoReserva tipo;
+
+    // 🔹 Só será usado quando tipo = FIXA
+    private Integer diaSemana; // 1 = segunda ... 7 = domingo
+    private LocalTime horaInicio;
+    private LocalTime horaFim;
+    private boolean ativo = true;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
