@@ -27,20 +27,28 @@ public class SecurityConfiguration {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> {
+
+                    // Autenticação liberada
                     authorize.antMatchers("/usuarios/auth").permitAll();
 
-                    authorize.antMatchers(HttpMethod.GET, "/usuarios/**")
-                            .hasAnyRole("FUNCIONARIO", "ALUNO", "PROF_COMP", "PROF", "ADMIN");
+                    // 🔹 GETs de todos os recursos → todos os usuários autenticados podem ver
+                    authorize.antMatchers(HttpMethod.GET, "/usuarios/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/laboratorios/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/semestre/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/reserva/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
+
+                    // 🔹 POST/PUT/DELETE → apenas ADMIN ou professores conforme regra
+                    authorize.antMatchers("/reserva/**").hasAnyRole("PROF", "PROF_COMP", "ADMIN"); // criar reservas
+                                                                                                   // normais
                     authorize.antMatchers("/usuarios/**").hasRole("ADMIN");
-
-                    authorize.antMatchers(HttpMethod.GET, "/laboratorios/**")
-                            .hasAnyRole("FUNCIONARIO", "ALUNO", "PROF_COMP", "PROF", "ADMIN");
                     authorize.antMatchers("/laboratorios/**").hasRole("ADMIN");
-
-                    authorize.antMatchers(HttpMethod.GET, "/semestre/**")
-                            .hasAnyRole("FUNCIONARIO", "ALUNO", "PROF_COMP", "PROF", "ADMIN");
                     authorize.antMatchers("/semestre/**").hasRole("ADMIN");
 
+                    // Qualquer outro endpoint → autenticado
                     authorize.anyRequest().authenticated();
                 })
                 .sessionManagement(session -> session
@@ -51,7 +59,7 @@ public class SecurityConfiguration {
 
     @Bean
     public GrantedAuthorityDefaults grantedAuthorityDefaults() {
-        return new GrantedAuthorityDefaults("");
+        return new GrantedAuthorityDefaults(""); // Remove prefix "ROLE_"
     }
 
     @Bean

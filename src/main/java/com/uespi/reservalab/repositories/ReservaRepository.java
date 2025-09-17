@@ -35,4 +35,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
                         Laboratorio laboratorio, LocalDateTime dataFim, LocalDateTime dataInicio);
 
         List<Reserva> findByLaboratorioAndStatus(Laboratorio laboratorio, StatusReserva fixa);
+
+        List<Reserva> findByLaboratorioAndDiaSemanaAndSemestre(Laboratorio laboratorio, Integer diaSemana,
+                        Semestre semestre);
 }

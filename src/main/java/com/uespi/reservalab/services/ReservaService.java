@@ -2,13 +2,13 @@ package com.uespi.reservalab.services;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +17,7 @@ import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.models.Reserva;
 import com.uespi.reservalab.models.Semestre;
 import com.uespi.reservalab.models.Usuario;
+import com.uespi.reservalab.repositories.LaboratorioRepository;
 import com.uespi.reservalab.repositories.ReservaRepository;
 import com.uespi.reservalab.repositories.SemestreRepository;
 import com.uespi.reservalab.repositories.UsuarioRepository;
@@ -32,67 +33,99 @@ public class ReservaService {
     private final ReservaRepository reservaRepository;
     private final SemestreRepository semestreRepository;
     private final UsuarioRepository usuarioRepository;
+    private final LaboratorioRepository laboratorioRepository;
     // private final ReservaFixaRepository reservaFixaRepository;
 
     // Salvar nova reserva
-    public void salvar(Reserva reserva) {
-        // Verifica se a reserva veio com laboratório
-        if (reserva.getLaboratorio() == null) {
+    @Transactional
+    public Reserva salvar(Reserva reserva, Usuario usuarioLogado) {
+        // 1️⃣ Validar laboratório
+        if (reserva.getLaboratorio() == null || Utils.isEmpty(reserva.getLaboratorio().getId())) {
             throw new IllegalArgumentException("Laboratório não definido para a reserva");
         }
+        Laboratorio laboratorio = laboratorioRepository.findById(reserva.getLaboratorio().getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Laboratório não encontrado: " + reserva.getLaboratorio().getId()));
+        reserva.setLaboratorio(laboratorio);
 
-        // Define semestre ativo com base na data atual
+        // 2️⃣ Buscar usuário da reserva no banco
+        if (reserva.getUsuario() == null || reserva.getUsuario().getId() == null) {
+            throw new IllegalArgumentException("Usuário não definido para a reserva");
+        }
+        UUID usuarioId = reserva.getUsuario().getId();
+        Usuario usuarioReserva = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuarioId));
+        reserva.setUsuario(usuarioReserva);
+
+        // 3️⃣ Definir semestre ativo
         LocalDateTime agora = LocalDateTime.now();
         Semestre semestreAtivo = semestreRepository.findAll()
                 .stream()
                 .filter(s -> !agora.isBefore(s.getDataInicio()) && !agora.isAfter(s.getDataFim()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Nenhum semestre ativo encontrado"));
-
         reserva.setSemestre(semestreAtivo);
 
-        // Carrega usuário do banco
-        UUID usuarioId = reserva.getUsuario().getId();
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuarioId));
-        reserva.setUsuario(usuario);
+        // 4️⃣ Tratar reserva fixa
+        if (reserva.getStatus() == StatusReserva.FIXA) {
+            if (!usuarioLogado.getRoles().contains("ADMIN")) {
+                throw new IllegalArgumentException("Apenas administradores podem criar reservas fixas");
+            }
+            if (!usuarioReserva.getRoles().contains("PROF_COMP")) {
+                throw new IllegalArgumentException(
+                        "Reservas fixas só podem ser associadas a professores de computação");
+            }
+            reserva.setStatus(StatusReserva.FIXA);
 
-        // Determina se é reserva normal ou fixa
-        boolean isFixa = reserva.getStatus() == StatusReserva.FIXA;
-
-        // Verifica conflito apenas para reservas normais
-        if (!isFixa) {
+        } else {
+            // 5️⃣ Verificar conflito para reservas normais
             List<Reserva> reservasExistentes = reservaRepository
                     .findByLaboratorioAndDataInicioLessThanAndDataFimGreaterThan(
-                            reserva.getLaboratorio(),
+                            laboratorio,
                             reserva.getDataFim(),
-                            reserva.getDataInicio());
-
-            reservasExistentes = reservasExistentes.stream()
-                    .filter(r -> r.getStatus() != StatusReserva.FIXA) // Ignora reservas fixas
+                            reserva.getDataInicio())
+                    .stream()
+                    .filter(r -> r.getStatus() != StatusReserva.FIXA) // Ignorar fixas
                     .collect(Collectors.toList());
 
             if (!reservasExistentes.isEmpty()) {
                 throw new IllegalArgumentException("Horário do laboratório já reservado nesse período");
             }
 
-            // Status inicial para reservas normais
             reserva.setStatus(StatusReserva.PENDENTE);
-        } else {
-            // Para reservas fixas, mantém o status FIXA
-            reserva.setStatus(StatusReserva.FIXA);
         }
 
-        // Log para debug
-        System.out.println("Salvando reserva " + (isFixa ? "FIXA" : "NORMAL") +
-                " para usuário: " + usuario.getLogin() +
-                ", laboratório: " + reserva.getLaboratorio().getNome() +
-                ", início: " + reserva.getDataInicio() +
-                ", fim: " + reserva.getDataFim());
-
-        // Salva no banco
-        reservaRepository.save(reserva);
+        return reservaRepository.save(reserva);
     }
+
+    public void validarConflitoReserva(Reserva reserva) {
+        List<Reserva> reservasExistentes = reservaRepository
+                .findByLaboratorioAndDiaSemanaAndSemestre(
+                        reserva.getLaboratorio(),
+                        reserva.getDiaSemana(),
+                        reserva.getSemestre());
+
+        for (Reserva existente : reservasExistentes) {
+            boolean sobrepoe = reserva.getHoraInicio().isBefore(existente.getHoraFim()) &&
+                    reserva.getHoraFim().isAfter(existente.getHoraInicio());
+
+            if (sobrepoe) {
+                throw new IllegalArgumentException(
+                        "Já existe uma reserva conflitante neste horário para este laboratório.");
+            }
+        }
+    }
+
+    // // Método para pegar usuário logado do contexto Spring
+    // public Usuario getUsuarioLogado() {
+    // org.springframework.security.core.userdetails.User user =
+    // (org.springframework.security.core.userdetails.User) SecurityContextHolder
+    // .getContext().getAuthentication().getPrincipal();
+
+    // return usuarioRepository.findByLogin(user.getUsername())
+    // .orElseThrow(() -> new IllegalArgumentException("Usuário logado não
+    // encontrado"));
+    // }
 
     // Atualizar reserva existente
     public void atualizar(Reserva reserva) {

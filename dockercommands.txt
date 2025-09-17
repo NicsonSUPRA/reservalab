@@ -1,0 +1,9 @@
+docker run --name nicson-projetotcc2   
+    -e SPRING_DATASOURCE_URL=jdbc:postgresql://reservalabdbteste2:5432/reservalab   
+    -e SPRING_DATASOURCE_USERNAME=postgres   
+    -e SPRING_DATASOURCE_PASSWORD=postgres   
+    --network reservalab-network   
+    -d 
+    -p 8080:8080 
+    -p 9090:9090   
+    nicson/projetotcc
