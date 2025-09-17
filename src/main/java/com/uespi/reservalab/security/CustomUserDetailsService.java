@@ -4,12 +4,14 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
 
 import com.uespi.reservalab.models.Usuario;
 import com.uespi.reservalab.services.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
 
+@Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -27,7 +29,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .builder()
                 .username(usuario.getLogin())
                 .password(usuario.getSenha())
-                .authorities(usuario.getAuthorities().toArray(new String[usuario.getAuthorities().size()]))
+                .roles(usuario.getRoles().toArray(new String[usuario.getRoles().size()]))
+                // .authorities(usuario.getAuthorities().toArray(new
+                // String[usuario.getAuthorities().size()]))
                 .build();
     }
 

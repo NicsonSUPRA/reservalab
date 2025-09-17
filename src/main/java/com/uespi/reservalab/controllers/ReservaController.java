@@ -1,15 +1,22 @@
 package com.uespi.reservalab.controllers;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.models.Reserva;
 import com.uespi.reservalab.models.Usuario;
 import com.uespi.reservalab.services.ReservaService;
+import com.uespi.reservalab.services.UsuarioService;
 import com.uespi.reservalab.utils.Utils;
 
 import lombok.RequiredArgsConstructor;
@@ -21,10 +28,43 @@ public class ReservaController {
 
     private final ReservaService reservaService;
 
+    private final UsuarioService usuarioService;
+
+    @GetMapping("/usuario/logado/info")
+    public ResponseEntity<String> infoUsuarioLogado() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Usuário não autenticado");
+        }
+
+        // Nome do usuário logado
+        String username = auth.getName();
+
+        // Roles do usuário
+        List<String> roles = auth.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Usuário logado: ").append(username).append("\n");
+        sb.append("Roles: ").append(roles).append("\n");
+
+        return ResponseEntity.ok(sb.toString());
+    }
+
     // Criar nova reserva
     @PostMapping
     public ResponseEntity<Reserva> criarReserva(@RequestBody Reserva reserva) {
-        reservaService.salvar(reserva);
+        // Pega o usuário logado do contexto Spring Security
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("🔐 Usuário autenticado: " + authentication.getName());
+        Usuario usuarioLogado = usuarioService.obterUsuarioPorLogin(authentication.getName());
+
+        // Passa o usuário logado para o serviço
+        reservaService.salvar(reserva, usuarioLogado);
+
         return ResponseEntity.ok(reserva);
     }
 
@@ -106,4 +146,21 @@ public class ReservaController {
         reservaService.cancelarReserva(id);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/laboratorio/{id}/periodo")
+    public ResponseEntity<List<Reserva>> buscarReservasPorPeriodo(
+            @PathVariable Long id,
+            @RequestParam String dataInicio,
+            @RequestParam String dataFim) {
+
+        Laboratorio laboratorio = new Laboratorio();
+        laboratorio.setId(id);
+
+        LocalDateTime inicio = LocalDateTime.parse(dataInicio, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        LocalDateTime fim = LocalDateTime.parse(dataFim, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+        List<Reserva> reservas = reservaService.buscarReservasPorPeriodo(laboratorio, inicio, fim);
+        return ResponseEntity.ok(reservas);
+    }
+
 }

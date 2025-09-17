@@ -9,7 +9,7 @@ import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.repositories.LaboratorioRepository;
 import com.uespi.reservalab.validators.LaboratorioValidator;
 
-import jakarta.persistence.EntityNotFoundException;
+import javax.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service

@@ -3,17 +3,19 @@ package com.uespi.reservalab.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.uespi.reservalab.security.CustomUserDetailsService;
-import com.uespi.reservalab.security.JwtCustomAuthenticationFilter;
+import com.uespi.reservalab.security.JwtAuthorizationFilter;
 import com.uespi.reservalab.services.UsuarioService;
 
 @Configuration
@@ -21,43 +23,48 @@ import com.uespi.reservalab.services.UsuarioService;
 public class SecurityConfiguration {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-            JwtCustomAuthenticationFilter jwtCustomAuthenticationFilter) throws Exception {
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .httpBasic(Customizer.withDefaults())
-                .formLogin(configurer -> configurer.loginPage("/login"))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> {
 
-                    authorize.requestMatchers("/login/**").permitAll();
+                    // Autenticação liberada
+                    authorize.antMatchers("/usuarios/auth").permitAll();
 
-                    authorize.requestMatchers("/usuarios/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers("/clients/**").hasAuthority("ADMIN");
+                    // 🔹 GETs de todos os recursos → todos os usuários autenticados podem ver
+                    authorize.antMatchers(HttpMethod.GET, "/usuarios/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/laboratorios/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/semestre/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
+                    authorize.antMatchers(HttpMethod.GET, "/reserva/**").hasAnyRole("ALUNO", "FUNCIONARIO", "PROF",
+                            "PROF_COMP", "ADMIN");
 
-                    authorize.requestMatchers(HttpMethod.POST, "/laboratorios/**")
-                            .hasAnyAuthority("ADMIN", "PROF_COMP");
-                    authorize.requestMatchers(HttpMethod.GET, "/laboratorios/**")
-                            .hasAnyAuthority("ADMIN", "PROF_COMP", "PROFESSOR");
+                    // 🔹 POST/PUT/DELETE → apenas ADMIN ou professores conforme regra
+                    authorize.antMatchers("/reserva/**").hasAnyRole("PROF", "PROF_COMP", "ADMIN"); // criar reservas
+                                                                                                   // normais
+                    authorize.antMatchers("/usuarios/**").hasRole("ADMIN");
+                    authorize.antMatchers("/laboratorios/**").hasRole("ADMIN");
+                    authorize.antMatchers("/semestre/**").hasRole("ADMIN");
 
-                    authorize.requestMatchers(HttpMethod.GET, "/semestre/**").authenticated();
-                    authorize.requestMatchers(HttpMethod.POST, "/semestre/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers(HttpMethod.PUT, "/semestre/**").hasAuthority("ADMIN");
-                    authorize.requestMatchers(HttpMethod.DELETE, "/semestre/**").hasAuthority("ADMIN");
-
+                    // Qualquer outro endpoint → autenticado
                     authorize.anyRequest().authenticated();
                 })
-
-                .oauth2ResourceServer(oauth2Rs -> oauth2Rs.jwt(Customizer.withDefaults()))
-
-                .addFilterAfter(jwtCustomAuthenticationFilter, BearerTokenAuthenticationFilter.class)
-
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     @Bean
     public GrantedAuthorityDefaults grantedAuthorityDefaults() {
-        return new GrantedAuthorityDefaults("");
+        return new GrantedAuthorityDefaults(""); // Remove prefix "ROLE_"
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(10);
     }
 
     @Bean
@@ -65,4 +72,8 @@ public class SecurityConfiguration {
         return new CustomUserDetailsService(usuarioService);
     }
 
+    @Bean
+    public OncePerRequestFilter jwtFilter() {
+        return new JwtAuthorizationFilter();
+    }
 }
