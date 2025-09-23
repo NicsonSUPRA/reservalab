@@ -1,6 +1,5 @@
 package com.uespi.reservalab.controllers;
 
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.uespi.reservalab.dto.CredentialsDTO;
@@ -9,13 +8,16 @@ import com.uespi.reservalab.dto.UsuarioDTO;
 import com.uespi.reservalab.models.Usuario;
 import com.uespi.reservalab.security.JwtService;
 import com.uespi.reservalab.services.UsuarioService;
+import com.uespi.reservalab.utils.Utils;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -48,9 +50,10 @@ public class UsuarioController {
 
     // 🔹 Cadastro genérico por role
     @PostMapping("/cadastrar/{role}")
-    public ResponseEntity<Void> cadastrarUsuario(
+    public ResponseEntity<Map<String, Object>> cadastrarUsuario(
             @PathVariable("role") String role,
             @RequestBody UsuarioDTO usuarioDTO) {
+
         Usuario usuario = new Usuario();
         usuario.setNome(usuarioDTO.getNome());
         usuario.setLogin(usuarioDTO.getLogin());
@@ -65,7 +68,11 @@ public class UsuarioController {
                 .buildAndExpand(usuario.getId())
                 .toUri();
 
-        return ResponseEntity.created(location).build();
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensagem", "Usuário cadastrado com sucesso!");
+        response.put("location", location.toString());
+
+        return ResponseEntity.created(location).body(response);
     }
 
     // 🔹 Atualizar usuário
@@ -73,12 +80,22 @@ public class UsuarioController {
     public ResponseEntity<Void> atualizarUsuario(
             @RequestParam("id") String id,
             @RequestBody UsuarioDTO usuario) {
-        Usuario usuarioRetornado = usuarioService.obterUsuarioPorId(UUID.fromString(id));
 
+        Usuario usuarioRetornado = usuarioService.obterUsuarioPorId(UUID.fromString(id));
         if (usuarioRetornado == null) {
             return ResponseEntity.notFound().build();
         }
-        usuarioRetornado.setNome(usuario.getNome());
+
+        // Atualiza o nome
+        if (Utils.isNotEmpty(usuario.getNome())) {
+            usuarioRetornado.setNome(usuario.getNome());
+        }
+
+        // Atualiza a senha (criptografada)
+        if (Utils.isNotEmpty(usuario.getSenha())) {
+            usuarioRetornado.setSenha(passwordEncoder.encode(usuario.getSenha()));
+        }
+
         usuarioService.atualizar(usuarioRetornado);
         return ResponseEntity.noContent().build();
     }

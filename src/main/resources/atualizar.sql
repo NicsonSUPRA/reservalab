@@ -21,24 +21,52 @@ CREATE TABLE usuario_roles (
 --     constraint pk_client_id primary key (id)
 -- );
 
+-- create table laboratorio (
+--     id bigint not null,
+--     nome varchar(255) not null,
+--     data_cadastro timestamp not null,
+--     data_atualizacao timestamp not null,
+--     -- usuario_id not null,
+--     constraint pk_laboratorio_id primary key (id),
+--     -- constraint fk_usuario_id foreign key (usuario_id) references usuario(id)
+-- );
+
+-- create sequence seq_laboratorio minvalue 1;
+
+-- ALTER TABLE laboratorio
+-- ALTER COLUMN id
+-- SET DEFAULT nextval('seq_laboratorio');
+
+create sequence seq_laboratorio start 1 minvalue 1;
+
 create table laboratorio (
-    id bigint not null,
+    id bigint not null default nextval('seq_laboratorio'),
     nome varchar(255) not null,
     data_cadastro timestamp not null,
     data_atualizacao timestamp not null,
-    -- usuario_id not null,
-    constraint pk_laboratorio_id primary key (id),
-    -- constraint fk_usuario_id foreign key (usuario_id) references usuario(id)
+    constraint pk_laboratorio_id primary key (id)
 );
 
-create sequence seq_laboratorio minvalue 1;
+-- create table semestre (
+--     id bigint not null,
+--     data_inicio timestamp not null,
+--     data_fim timestamp not null,
+--     ano int not null,
+--     periodo int not null,
+--     descricao varchar(20) not null,
+--     constraint pk_semestre_id primary key (id),
+--     constraint uq_semestre_ano_periodo unique (ano, periodo)
+-- );
 
-ALTER TABLE laboratorio
-ALTER COLUMN id
-SET DEFAULT nextval('seq_laboratorio');
+-- create sequence seq_semestre start 1 increment 1 minvalue 1;
+
+-- alter table semestre
+-- alter column id
+-- set default nextval('seq_semestre');
+create sequence seq_semestre start 1 increment 1 minvalue 1;
 
 create table semestre (
-    id bigint not null,
+    id bigint not null default nextval('seq_semestre'),
     data_inicio timestamp not null,
     data_fim timestamp not null,
     ano int not null,
@@ -47,12 +75,6 @@ create table semestre (
     constraint pk_semestre_id primary key (id),
     constraint uq_semestre_ano_periodo unique (ano, periodo)
 );
-
-create sequence seq_semestre start 1 increment 1 minvalue 1;
-
-alter table semestre
-alter column id
-set default nextval('seq_semestre');
 
 -- create table reserva (
 --     id bigint not null,
