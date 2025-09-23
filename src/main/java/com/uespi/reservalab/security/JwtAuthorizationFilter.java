@@ -23,21 +23,27 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private CustomUserDetailsService customUserDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         String token = request.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            String tokenValue = token.split(" ")[1];
-            String login = jwtService.getLoggedUser(tokenValue);
-            UserDetails user = customUserDetailsService.loadUserByUsername(login);
-            UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
-                    user,
-                    null,
-                    user.getAuthorities());
-            userToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(userToken);
+        try {
+            if (token != null && token.startsWith("Bearer ")) {
+                String tokenValue = token.split(" ")[1];
+                String login = jwtService.getLoggedUser(tokenValue);
+                UserDetails user = customUserDetailsService.loadUserByUsername(login);
+
+                UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(user, null,
+                        user.getAuthorities());
+                userToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(userToken);
+            }
+            filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+            response.setContentType("application/json");
+            response.getWriter().write("{\"erro\": \"Token inválido ou usuário não encontrado\"}");
         }
-        filterChain.doFilter(request, response);
     }
 
 }
