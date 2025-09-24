@@ -2,6 +2,7 @@ package com.uespi.reservalab.services;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,16 @@ public class UsuarioService {
 
     public List<Usuario> obterUsuarioComNomeSemelhante(String nome) {
         return usuarioRepository.obterUsuarioComNomeSemelhante("%" + nome + "%");
+    }
+
+    public List<Usuario> pesquisarUsuarios(String nome, String login, List<String> roles) {
+        // Consulta usando Criteria, JPQL ou repositório JPA
+        // Exemplo simples:
+        return usuarioRepository.findAll().stream()
+                .filter(u -> (nome == null || u.getNome().contains(nome)) &&
+                        (login == null || u.getLogin().contains(login)) &&
+                        (roles == null || roles.isEmpty() || u.getRoles().stream().anyMatch(roles::contains)))
+                .collect(Collectors.toList());
     }
 
 }
