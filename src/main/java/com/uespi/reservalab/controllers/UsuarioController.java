@@ -106,6 +106,17 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.findAll());
     }
 
+    // Controller
+    @GetMapping("/pesquisar")
+    public ResponseEntity<List<Usuario>> pesquisarUsuarios(
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) String login,
+            @RequestParam(required = false) List<String> roles) {
+
+        List<Usuario> usuarios = usuarioService.pesquisarUsuarios(nome, login, roles);
+        return ResponseEntity.ok(usuarios);
+    }
+
     // 🔹 Buscar por ID
     @GetMapping("{id}")
     public ResponseEntity<Usuario> buscarPorId(@PathVariable("id") String id) {
