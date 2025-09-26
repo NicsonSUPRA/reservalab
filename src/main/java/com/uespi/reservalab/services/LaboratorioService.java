@@ -1,6 +1,7 @@
 package com.uespi.reservalab.services;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,6 +79,12 @@ public class LaboratorioService {
 
     public List<Laboratorio> obterLaboratoriosComNomesSemelhantes(String nome) {
         return laboratorioRepository.obterLaboratoriosComNomesSemelhantes("%" + nome + "%");
+    }
+
+    public List<Laboratorio> pesquisarLaboratorios(String nome) {
+        return laboratorioRepository.findAll().stream()
+                .filter(l -> nome == null || l.getNome().toLowerCase().contains(nome.toLowerCase()))
+                .collect(Collectors.toList());
     }
 
 }

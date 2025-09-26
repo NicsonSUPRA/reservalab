@@ -3,6 +3,7 @@ package com.uespi.reservalab.controllers;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.uespi.reservalab.exceptions.RegistroDuplicadoException;
 import com.uespi.reservalab.models.Laboratorio;
@@ -12,7 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,15 +34,27 @@ public class LaboratorioController {
     private final LaboratorioService laboratorioService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<String> cadastrarLaboratorio(@RequestBody Laboratorio laboratorio) {
+    public ResponseEntity<Map<String, Object>> cadastrarLaboratorio(@RequestBody Laboratorio laboratorio) {
         try {
             laboratorioService.salvar(laboratorio);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Laboratório cadastrado com sucesso!");
-        } catch (RegistroDuplicadoException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        }
 
+            // Monta a URI do laboratório criado
+            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                    .path("/{id}")
+                    .buildAndExpand(laboratorio.getId())
+                    .toUri();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("mensagem", "Laboratório cadastrado com sucesso!");
+            response.put("location", location.toString());
+
+            return ResponseEntity.created(location).body(response);
+
+        } catch (RegistroDuplicadoException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("erro", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
     }
 
     @GetMapping
@@ -71,8 +87,11 @@ public class LaboratorioController {
     }
 
     @GetMapping("/pesquisar")
-    public ResponseEntity<List<Laboratorio>> pesquisarPorFiltro(@RequestParam(value = "nome") String param) {
-        return ResponseEntity.ok(laboratorioService.obterLaboratoriosComNomesSemelhantes(param));
+    public ResponseEntity<List<Laboratorio>> pesquisarLaboratorios(
+            @RequestParam(required = false) String nome) {
+
+        List<Laboratorio> laboratorios = laboratorioService.pesquisarLaboratorios(nome);
+        return ResponseEntity.ok(laboratorios);
     }
 
 }
