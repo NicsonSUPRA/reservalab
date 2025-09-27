@@ -1,6 +1,7 @@
 package com.uespi.reservalab.services;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,5 +67,13 @@ public class SemestreService {
     // Buscar por ano e período
     public Semestre findByAnoAndPeriodo(int ano, int periodo) {
         return semestreRepository.findByAnoAndPeriodo(ano, periodo).orElse(null);
+    }
+
+    public List<Semestre> pesquisarSemestres(String descricao, Integer ano, Integer periodo) {
+        return semestreRepository.findAll().stream()
+                .filter(s -> (descricao == null || s.getDescricao().toLowerCase().contains(descricao.toLowerCase())))
+                .filter(s -> (ano == null || s.getAno().equals(ano)))
+                .filter(s -> (periodo == null || s.getPeriodo().equals(periodo)))
+                .collect(Collectors.toList());
     }
 }
