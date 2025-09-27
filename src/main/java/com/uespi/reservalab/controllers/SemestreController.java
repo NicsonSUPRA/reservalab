@@ -1,8 +1,11 @@
 package com.uespi.reservalab.controllers;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,14 +25,27 @@ public class SemestreController {
 
     // Cadastrar semestre
     @PostMapping
-    public ResponseEntity<Void> cadastrarSemestre(@RequestBody Semestre semestre) {
-        semestreService.salvar(semestre);
+    public ResponseEntity<Map<String, Object>> cadastrarSemestre(@RequestBody Semestre semestre) {
+        try {
+            semestreService.salvar(semestre);
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(semestre.getId())
-                .toUri();
-        return ResponseEntity.created(location).build();
+            // Monta a URI do semestre criado
+            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                    .path("/{id}")
+                    .buildAndExpand(semestre.getId())
+                    .toUri();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("mensagem", "Semestre cadastrado com sucesso!");
+            response.put("location", location.toString());
+
+            return ResponseEntity.created(location).body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("erro", "Erro ao cadastrar semestre: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     // Atualizar semestre
@@ -72,12 +88,13 @@ public class SemestreController {
     }
 
     // Buscar semestre por ano e período
-    @GetMapping("/buscar")
-    public ResponseEntity<Semestre> buscarPorAnoPeriodo(@RequestParam int ano, @RequestParam int periodo) {
-        Semestre semestre = semestreService.findByAnoAndPeriodo(ano, periodo);
-        if (semestre == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(semestre);
+    @GetMapping("/pesquisar")
+    public ResponseEntity<List<Semestre>> pesquisarSemestres(
+            @RequestParam(required = false) String descricao,
+            @RequestParam(required = false) Integer ano,
+            @RequestParam(required = false) Integer periodo) {
+
+        List<Semestre> semestres = semestreService.pesquisarSemestres(descricao, ano, periodo);
+        return ResponseEntity.ok(semestres);
     }
 }
