@@ -8,11 +8,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.uespi.reservalab.dto.ReservaFixaDTO;
+import com.uespi.reservalab.dto.ReservaNormalDTO;
 import com.uespi.reservalab.enums.StatusReserva;
+import com.uespi.reservalab.enums.TipoReserva;
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.models.Reserva;
 import com.uespi.reservalab.models.Semestre;
@@ -29,6 +31,10 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 @RequiredArgsConstructor
 public class ReservaService {
+
+    private final UsuarioService usuarioService;
+    private final LaboratorioService laboratorioService;
+    private final SemestreService semestreService;
 
     private final ReservaRepository reservaRepository;
     private final SemestreRepository semestreRepository;
@@ -67,7 +73,7 @@ public class ReservaService {
         reserva.setSemestre(semestreAtivo);
 
         // 4️⃣ Tratar reserva fixa
-        if (reserva.getStatus() == StatusReserva.FIXA) {
+        if (reserva.getTipo() == TipoReserva.FIXA) {
             if (!usuarioLogado.getRoles().contains("ADMIN")) {
                 throw new IllegalArgumentException("Apenas administradores podem criar reservas fixas");
             }
@@ -75,7 +81,7 @@ public class ReservaService {
                 throw new IllegalArgumentException(
                         "Reservas fixas só podem ser associadas a professores de computação");
             }
-            reserva.setStatus(StatusReserva.FIXA);
+            reserva.setTipo(TipoReserva.FIXA);
 
         } else {
             // 5️⃣ Verificar conflito para reservas normais
@@ -85,7 +91,7 @@ public class ReservaService {
                             reserva.getDataFim(),
                             reserva.getDataInicio())
                     .stream()
-                    .filter(r -> r.getStatus() != StatusReserva.FIXA) // Ignorar fixas
+                    .filter(r -> r.getTipo() != TipoReserva.FIXA) // Ignorar fixas
                     .collect(Collectors.toList());
 
             if (!reservasExistentes.isEmpty()) {
@@ -96,6 +102,77 @@ public class ReservaService {
         }
 
         return reservaRepository.save(reserva);
+    }
+
+    @Transactional
+    public Reserva salvarFixa(ReservaFixaDTO dto, Usuario usuarioLogado) {
+        if (dto == null) {
+            throw new IllegalArgumentException("DTO de reserva fixa não pode ser nulo");
+        }
+
+        System.out.println("🔹 DTO recebido: " + dto);
+
+        Reserva reserva = new Reserva();
+        reserva.setTipo(TipoReserva.FIXA);
+        reserva.setDiaSemana(dto.getDiaSemana());
+        reserva.setHoraInicio(dto.getHoraInicio());
+        reserva.setHoraFim(dto.getHoraFim());
+
+        System.out.println("🔹 Mapeando usuário...");
+        Usuario usuario = usuarioService.obterUsuarioPorId(dto.getUsuarioId());
+        System.out.println("Usuario encontrado: " + usuario);
+        reserva.setUsuario(usuario);
+
+        System.out.println("🔹 Mapeando laboratório...");
+        Laboratorio laboratorio = laboratorioService.obterLaboratorioPorId(dto.getLaboratorioId());
+        System.out.println("Laboratório encontrado: " + laboratorio);
+        reserva.setLaboratorio(laboratorio);
+
+        System.out.println("🔹 Mapeando semestre...");
+        Semestre semestre = semestreService.findById(dto.getSemestreId());
+        System.out.println("Semestre encontrado: " + semestre);
+        reserva.setSemestre(semestre);
+
+        System.out.println("🔹 Chamando método salvar()...");
+        Reserva salva = salvar(reserva, usuarioLogado);
+        System.out.println("🔹 Reserva salva: " + salva);
+
+        return salva;
+    }
+
+    @Transactional
+    public Reserva salvarNormal(ReservaNormalDTO dto, Usuario usuarioLogado) {
+        if (dto == null) {
+            throw new IllegalArgumentException("DTO de reserva normal não pode ser nulo");
+        }
+
+        System.out.println("🔹 DTO recebido (Normal): " + dto);
+
+        Reserva reserva = new Reserva();
+        reserva.setTipo(TipoReserva.NORMAL);
+        reserva.setDataInicio(dto.getDataInicio());
+        reserva.setDataFim(dto.getDataFim());
+
+        System.out.println("🔹 Mapeando usuário...");
+        Usuario usuario = usuarioService.obterUsuarioPorId(dto.getUsuarioId());
+        System.out.println("Usuario encontrado: " + usuario);
+        reserva.setUsuario(usuario);
+
+        System.out.println("🔹 Mapeando laboratório...");
+        Laboratorio laboratorio = laboratorioService.obterLaboratorioPorId(dto.getLaboratorioId());
+        System.out.println("Laboratório encontrado: " + laboratorio);
+        reserva.setLaboratorio(laboratorio);
+
+        System.out.println("🔹 Mapeando semestre...");
+        Semestre semestre = semestreService.findById(dto.getSemestreId());
+        System.out.println("Semestre encontrado: " + semestre);
+        reserva.setSemestre(semestre);
+
+        System.out.println("🔹 Chamando método salvar()...");
+        Reserva salva = salvar(reserva, usuarioLogado);
+        System.out.println("🔹 Reserva salva: " + salva);
+
+        return salva;
     }
 
     public void validarConflitoReserva(Reserva reserva) {
@@ -232,13 +309,13 @@ public class ReservaService {
         List<Reserva> reservasNormais = reservaRepository
                 .findByLaboratorioAndDataInicioLessThanAndDataFimGreaterThan(laboratorio, dataFim, dataInicio)
                 .stream()
-                .filter(r -> r.getStatus() != StatusReserva.FIXA) // ignora FIXAS aqui
+                .filter(r -> r.getTipo() == TipoReserva.NORMAL) // apenas normais
                 .collect(Collectors.toList());
         System.out.println("🔍 Reservas normais encontradas: " + reservasNormais.size());
         resultado.addAll(reservasNormais);
 
         // 2️⃣ Buscar reservas FIXAS
-        List<Reserva> reservasFixas = reservaRepository.findByLaboratorioAndStatus(laboratorio, StatusReserva.FIXA);
+        List<Reserva> reservasFixas = reservaRepository.findByLaboratorioAndTipo(laboratorio, TipoReserva.FIXA);
         System.out.println("🔍 Reservas FIXAS encontradas no banco: " + reservasFixas.size());
 
         for (Reserva fixa : reservasFixas) {
@@ -258,24 +335,18 @@ public class ReservaService {
                     : semestreInicio;
             LocalDate end = dataFim.toLocalDate().isBefore(semestreFim) ? dataFim.toLocalDate() : semestreFim;
 
-            System.out.println("📅 Verificando reservas FIXAS no intervalo: " + start + " até " + end);
-
             LocalDate current = start;
             while (!current.isAfter(end)) {
                 int diaAtual = current.getDayOfWeek().getValue(); // 1=segunda ... 7=domingo
-                System.out.println("➡️ Data atual: " + current + " (diaAtual=" + diaAtual + ")");
 
                 if (diaAtual == fixa.getDiaSemana()) {
-                    System.out.println("✅ Adicionando reserva FIXA em " + current +
-                            " (" + fixa.getHoraInicio() + " - " + fixa.getHoraFim() + ")");
-
                     Reserva r = new Reserva();
                     r.setId(fixa.getId()); // reserva gerada dinamicamente
                     r.setUsuario(fixa.getUsuario());
                     r.setLaboratorio(fixa.getLaboratorio());
                     r.setDataInicio(LocalDateTime.of(current, fixa.getHoraInicio()));
                     r.setDataFim(LocalDateTime.of(current, fixa.getHoraFim()));
-                    r.setStatus(StatusReserva.FIXA); // deixa claro que é FIXA
+                    r.setTipo(TipoReserva.FIXA);
                     r.setSemestre(fixa.getSemestre());
 
                     resultado.add(r);
