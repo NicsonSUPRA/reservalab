@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.uespi.reservalab.enums.StatusReserva;
+import com.uespi.reservalab.enums.TipoReserva;
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.models.Reserva;
 import com.uespi.reservalab.models.Semestre;
@@ -38,4 +39,6 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
         List<Reserva> findByLaboratorioAndDiaSemanaAndSemestre(Laboratorio laboratorio, Integer diaSemana,
                         Semestre semestre);
+
+        List<Reserva> findByLaboratorioAndTipo(Laboratorio laboratorio, TipoReserva tipo);
 }

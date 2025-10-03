@@ -6,8 +6,7 @@ public enum StatusReserva {
     PENDENTE("Pendente"),
     APROVADA("Aprovada"),
     RECUSADA("Recusada"),
-    CANCELADA("Cancelada"),
-    FIXA("Fixa"); // reservado por configuração fixa (ReservaFixa)
+    CANCELADA("Cancelada");
 
     private final String descricao;
 
@@ -35,8 +34,8 @@ public enum StatusReserva {
                 .orElseThrow(() -> new IllegalArgumentException("StatusReserva inválido: " + descricao));
     }
 
-    // helper útil para checar se é uma reserva fixa
-    public boolean isFixa() {
-        return this == FIXA;
-    }
+    // // helper útil para checar se é uma reserva fixa
+    // public boolean isFixa() {
+    // return this == FIXA;
+    // }
 }

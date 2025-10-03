@@ -12,6 +12,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import com.uespi.reservalab.dto.ReservaFixaDTO;
+import com.uespi.reservalab.dto.ReservaNormalDTO;
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.models.Reserva;
 import com.uespi.reservalab.models.Usuario;
@@ -64,6 +66,32 @@ public class ReservaController {
 
         // Passa o usuário logado para o serviço
         reservaService.salvar(reserva, usuarioLogado);
+
+        return ResponseEntity.ok(reserva);
+    }
+
+    @PostMapping("/fixa")
+    public ResponseEntity<Reserva> criarReservaFixa(@RequestBody ReservaFixaDTO dto) {
+        // Pega o usuário logado do contexto Spring Security
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("🔐 Usuário autenticado: " + authentication.getName());
+        Usuario usuarioLogado = usuarioService.obterUsuarioPorLogin(authentication.getName());
+
+        // Chama o serviço para salvar reserva fixa
+        Reserva reserva = reservaService.salvarFixa(dto, usuarioLogado);
+
+        return ResponseEntity.ok(reserva);
+    }
+
+    @PostMapping("/normal")
+    public ResponseEntity<Reserva> criarReservaNormal(@RequestBody ReservaNormalDTO dto) {
+        // Pega o usuário logado do contexto Spring Security
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("🔐 Usuário autenticado: " + authentication.getName());
+        Usuario usuarioLogado = usuarioService.obterUsuarioPorLogin(authentication.getName());
+
+        // Chama o serviço para salvar reserva normal
+        Reserva reserva = reservaService.salvarNormal(dto, usuarioLogado);
 
         return ResponseEntity.ok(reserva);
     }
