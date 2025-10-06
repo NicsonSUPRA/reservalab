@@ -191,4 +191,22 @@ public class ReservaController {
         return ResponseEntity.ok(reservas);
     }
 
+    @GetMapping("/laboratorio/{id}/periodo/fixas")
+    public ResponseEntity<List<Reserva>> buscarReservasFixasPorPeriodo(
+            @PathVariable Long id,
+            @RequestParam String dataInicio,
+            @RequestParam String dataFim) {
+
+        Laboratorio laboratorio = new Laboratorio();
+        laboratorio.setId(id);
+
+        LocalDateTime inicio = LocalDateTime.parse(dataInicio, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        LocalDateTime fim = LocalDateTime.parse(dataFim, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+        // Chama o método que retorna apenas reservas FIXAS
+        List<Reserva> reservas = reservaService.buscarReservasFixasPorPeriodo(laboratorio, inicio, fim);
+
+        return ResponseEntity.ok(reservas);
+    }
+
 }
