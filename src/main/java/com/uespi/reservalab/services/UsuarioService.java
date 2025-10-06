@@ -70,4 +70,8 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
+    public List<Usuario> obterTodosUsuariosProfessoresAndProfComp() {
+        return usuarioRepository.findByRolesIn(List.of("PROF", "PROF_COMP"));
+    }
+
 }

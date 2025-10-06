@@ -19,4 +19,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
     @Query("Select u from Usuario u where lower(u.nome) like lower(:nome)")
     public List<Usuario> obterUsuarioComNomeSemelhante(@Param("nome") String nome);
+
+    List<Usuario> findByRolesIn(List<String> roles);
 }
