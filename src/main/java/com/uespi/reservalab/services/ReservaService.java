@@ -362,4 +362,57 @@ public class ReservaService {
         return resultado;
     }
 
+    public List<Reserva> buscarReservasFixasPorPeriodo(Laboratorio laboratorio, LocalDateTime dataInicio,
+            LocalDateTime dataFim) {
+
+        List<Reserva> resultado = new ArrayList<>();
+
+        // Buscar reservas FIXAS do laboratório
+        List<Reserva> reservasFixas = reservaRepository.findByLaboratorioAndTipo(laboratorio, TipoReserva.FIXA);
+        System.out.println("🔍 Reservas FIXAS encontradas no banco: " + reservasFixas.size());
+
+        for (Reserva fixa : reservasFixas) {
+
+            if (fixa.getDiaSemana() == null || fixa.getHoraInicio() == null || fixa.getHoraFim() == null) {
+                System.out.println("⛔ Ignorada reserva fixa com informações incompletas -> id=" + fixa.getId());
+                continue;
+            }
+
+            // Define período de verificação limitado ao semestre
+            LocalDate semestreInicio = fixa.getSemestre() != null ? fixa.getSemestre().getDataInicio().toLocalDate()
+                    : dataInicio.toLocalDate();
+            LocalDate semestreFim = fixa.getSemestre() != null ? fixa.getSemestre().getDataFim().toLocalDate()
+                    : dataFim.toLocalDate();
+
+            LocalDate start = dataInicio.toLocalDate().isAfter(semestreInicio) ? dataInicio.toLocalDate()
+                    : semestreInicio;
+            LocalDate end = dataFim.toLocalDate().isBefore(semestreFim) ? dataFim.toLocalDate() : semestreFim;
+
+            LocalDate current = start;
+            while (!current.isAfter(end)) {
+                int diaAtual = current.getDayOfWeek().getValue(); // 1=segunda ... 7=domingo
+
+                if (diaAtual == fixa.getDiaSemana()) {
+                    Reserva r = new Reserva();
+                    r.setId(fixa.getId()); // reserva gerada dinamicamente
+                    r.setUsuario(fixa.getUsuario());
+                    r.setLaboratorio(fixa.getLaboratorio());
+                    r.setDataInicio(LocalDateTime.of(current, fixa.getHoraInicio()));
+                    r.setDataFim(LocalDateTime.of(current, fixa.getHoraFim()));
+                    r.setTipo(TipoReserva.FIXA);
+                    r.setSemestre(fixa.getSemestre());
+
+                    resultado.add(r);
+                }
+
+                current = current.plusDays(1);
+            }
+        }
+
+        resultado.sort(Comparator.comparing(Reserva::getDataInicio));
+        System.out.println("📊 Total de reservas FIXAS retornadas no período: " + resultado.size());
+
+        return resultado;
+    }
+
 }
