@@ -106,6 +106,12 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.findAll());
     }
 
+    // 🔹 Buscar todos os professores e prof_comp
+    @GetMapping("/professores")
+    public ResponseEntity<List<Usuario>> findAllProfessores() {
+        return ResponseEntity.ok(usuarioService.obterTodosUsuariosProfessoresAndProfComp());
+    }
+
     // Controller
     @GetMapping("/pesquisar")
     public ResponseEntity<List<Usuario>> pesquisarUsuarios(
