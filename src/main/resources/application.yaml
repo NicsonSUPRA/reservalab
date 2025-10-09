@@ -9,9 +9,9 @@ spring:
   datasource:
     # url: jdbc:postgresql://resrevalab-database.ctkqkcec8dck.us-east-2.rds.amazonaws.com:5432/reservalab
 
-    url: jdbc:postgresql://localhost:5433/reservalab
+    url: jdbc:postgresql://localhost:5432/reservalab
     username: postgres
-    password: postgres
+    password: talikdnt123
 
 security:
   jwt:
