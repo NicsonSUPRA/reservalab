@@ -3,23 +3,33 @@ package com.uespi.reservalab.services;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uespi.reservalab.dto.ReservaFixaDTO;
+import com.uespi.reservalab.dto.ReservaFixaExcecaoDTO;
 import com.uespi.reservalab.dto.ReservaNormalDTO;
 import com.uespi.reservalab.enums.StatusReserva;
 import com.uespi.reservalab.enums.TipoReserva;
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.models.Reserva;
+import com.uespi.reservalab.models.ReservaFixaExcecao;
 import com.uespi.reservalab.models.Semestre;
 import com.uespi.reservalab.models.Usuario;
 import com.uespi.reservalab.repositories.LaboratorioRepository;
+import com.uespi.reservalab.repositories.ReservaFixaExcecaoRepository;
 import com.uespi.reservalab.repositories.ReservaRepository;
 import com.uespi.reservalab.repositories.SemestreRepository;
 import com.uespi.reservalab.repositories.UsuarioRepository;
@@ -35,6 +45,7 @@ public class ReservaService {
     private final UsuarioService usuarioService;
     private final LaboratorioService laboratorioService;
     private final SemestreService semestreService;
+    private final ReservaFixaExcecaoRepository excecaoRepo;
 
     private final ReservaRepository reservaRepository;
     private final SemestreRepository semestreRepository;
@@ -92,6 +103,9 @@ public class ReservaService {
                             reserva.getDataInicio())
                     .stream()
                     .filter(r -> r.getTipo() != TipoReserva.FIXA) // Ignorar fixas
+                    .filter(Reserva::isAtivo) // Apenas ativas
+                    .filter(r -> r.getStatus() == null || !r.getStatus().equals(StatusReserva.CANCELADA)) // Ignorar
+                                                                                                          // canceladas
                     .collect(Collectors.toList());
 
             if (!reservasExistentes.isEmpty()) {
@@ -305,54 +319,86 @@ public class ReservaService {
 
         List<Reserva> resultado = new ArrayList<>();
 
-        // 1️⃣ Buscar reservas normais
+        // 1️⃣ Buscar reservas normais (apenas ativas e não canceladas)
         List<Reserva> reservasNormais = reservaRepository
                 .findByLaboratorioAndDataInicioLessThanAndDataFimGreaterThan(laboratorio, dataFim, dataInicio)
                 .stream()
                 .filter(r -> r.getTipo() == TipoReserva.NORMAL) // apenas normais
+                .filter(Reserva::isAtivo) // apenas ativas
+                .filter(r -> r.getStatus() == null || !r.getStatus().equals(StatusReserva.CANCELADA)) // ignora
+                                                                                                      // canceladas
                 .collect(Collectors.toList());
+
         System.out.println("🔍 Reservas normais encontradas: " + reservasNormais.size());
         resultado.addAll(reservasNormais);
 
-        // 2️⃣ Buscar reservas FIXAS
-        List<Reserva> reservasFixas = reservaRepository.findByLaboratorioAndTipo(laboratorio, TipoReserva.FIXA);
+        // 2️⃣ Buscar reservas FIXAS (apenas ativas)
+        List<Reserva> reservasFixas = reservaRepository.findByLaboratorioAndTipo(laboratorio, TipoReserva.FIXA)
+                .stream()
+                .filter(Reserva::isAtivo) // considerar somente fixas ativas
+                .collect(Collectors.toList());
         System.out.println("🔍 Reservas FIXAS encontradas no banco: " + reservasFixas.size());
 
-        for (Reserva fixa : reservasFixas) {
+        if (!reservasFixas.isEmpty()) {
+            // Define período de verificação (usado para buscar exceções)
+            LocalDate periodStart = dataInicio.toLocalDate();
+            LocalDate periodEnd = dataFim.toLocalDate();
 
-            if (fixa.getDiaSemana() == null || fixa.getHoraInicio() == null || fixa.getHoraFim() == null) {
-                System.out.println("⛔ Ignorada reserva fixa com informações incompletas -> id=" + fixa.getId());
-                continue;
+            // Buscar exceções em lote para as fixas no intervalo
+            List<ReservaFixaExcecao> excecoes = excecaoRepo.findByReservaFixaInAndDataBetween(reservasFixas,
+                    periodStart, periodEnd);
+
+            // Montar mapa: fixaId -> Set<LocalDate> (datas com exceção)
+            Map<Long, Set<LocalDate>> excecoesMap = new HashMap<>();
+            for (ReservaFixaExcecao ex : excecoes) {
+                Long idFixa = ex.getReservaFixa().getId();
+                excecoesMap.computeIfAbsent(idFixa, k -> new HashSet<>()).add(ex.getData());
             }
 
-            // Define período de verificação limitado ao semestre
-            LocalDate semestreInicio = fixa.getSemestre() != null ? fixa.getSemestre().getDataInicio().toLocalDate()
-                    : dataInicio.toLocalDate();
-            LocalDate semestreFim = fixa.getSemestre() != null ? fixa.getSemestre().getDataFim().toLocalDate()
-                    : dataFim.toLocalDate();
+            // Iterar cada reserva fixa e gerar ocorrências, pulando as que têm exceção
+            for (Reserva fixa : reservasFixas) {
 
-            LocalDate start = dataInicio.toLocalDate().isAfter(semestreInicio) ? dataInicio.toLocalDate()
-                    : semestreInicio;
-            LocalDate end = dataFim.toLocalDate().isBefore(semestreFim) ? dataFim.toLocalDate() : semestreFim;
-
-            LocalDate current = start;
-            while (!current.isAfter(end)) {
-                int diaAtual = current.getDayOfWeek().getValue(); // 1=segunda ... 7=domingo
-
-                if (diaAtual == fixa.getDiaSemana()) {
-                    Reserva r = new Reserva();
-                    r.setId(fixa.getId()); // reserva gerada dinamicamente
-                    r.setUsuario(fixa.getUsuario());
-                    r.setLaboratorio(fixa.getLaboratorio());
-                    r.setDataInicio(LocalDateTime.of(current, fixa.getHoraInicio()));
-                    r.setDataFim(LocalDateTime.of(current, fixa.getHoraFim()));
-                    r.setTipo(TipoReserva.FIXA);
-                    r.setSemestre(fixa.getSemestre());
-
-                    resultado.add(r);
+                if (fixa.getDiaSemana() == null || fixa.getHoraInicio() == null || fixa.getHoraFim() == null) {
+                    System.out.println("⛔ Ignorada reserva fixa com informações incompletas -> id=" + fixa.getId());
+                    continue;
                 }
 
-                current = current.plusDays(1);
+                // Define período de verificação limitado ao semestre
+                LocalDate semestreInicio = fixa.getSemestre() != null ? fixa.getSemestre().getDataInicio().toLocalDate()
+                        : dataInicio.toLocalDate();
+                LocalDate semestreFim = fixa.getSemestre() != null ? fixa.getSemestre().getDataFim().toLocalDate()
+                        : dataFim.toLocalDate();
+
+                LocalDate start = dataInicio.toLocalDate().isAfter(semestreInicio) ? dataInicio.toLocalDate()
+                        : semestreInicio;
+                LocalDate end = dataFim.toLocalDate().isBefore(semestreFim) ? dataFim.toLocalDate() : semestreFim;
+
+                LocalDate current = start;
+                while (!current.isAfter(end)) {
+                    int diaAtual = current.getDayOfWeek().getValue(); // 1=segunda ... 7=domingo
+
+                    if (diaAtual == fixa.getDiaSemana()) {
+                        // Verifica se existe exceção para esta fixa nesta data
+                        Set<LocalDate> datasExcluidas = excecoesMap.getOrDefault(fixa.getId(), Collections.emptySet());
+                        if (datasExcluidas.contains(current)) {
+                            // ocorrência cancelada/exceção -> pular
+                            System.out.println("⛔ Ocorrência fixa pulada por exceção -> fixaId=" + fixa.getId()
+                                    + " date=" + current);
+                        } else {
+                            Reserva r = new Reserva();
+                            r.setId(fixa.getId()); // id informativo da fixa
+                            r.setUsuario(fixa.getUsuario());
+                            r.setLaboratorio(fixa.getLaboratorio());
+                            r.setDataInicio(LocalDateTime.of(current, fixa.getHoraInicio()));
+                            r.setDataFim(LocalDateTime.of(current, fixa.getHoraFim()));
+                            r.setTipo(TipoReserva.FIXA);
+                            r.setSemestre(fixa.getSemestre());
+                            r.setAtivo(true);
+                            resultado.add(r);
+                        }
+                    }
+                    current = current.plusDays(1);
+                }
             }
         }
 
@@ -367,10 +413,42 @@ public class ReservaService {
 
         List<Reserva> resultado = new ArrayList<>();
 
-        // Buscar reservas FIXAS do laboratório
-        List<Reserva> reservasFixas = reservaRepository.findByLaboratorioAndTipo(laboratorio, TipoReserva.FIXA);
+        // Buscar reservas FIXAS do laboratório (apenas ativas)
+        List<Reserva> reservasFixas = reservaRepository.findByLaboratorioAndTipo(laboratorio, TipoReserva.FIXA)
+                .stream()
+                .filter(Reserva::isAtivo)
+                .collect(Collectors.toList());
+
         System.out.println("🔍 Reservas FIXAS encontradas no banco: " + reservasFixas.size());
 
+        if (reservasFixas.isEmpty()) {
+            return resultado;
+        }
+
+        // Período para buscar exceções (usamos LocalDate)
+        LocalDate periodStart = dataInicio.toLocalDate();
+        LocalDate periodEnd = dataFim.toLocalDate();
+
+        // Converter lista de fixas para lista de IDs (evita problemas de tipo e é mais
+        // eficiente)
+        List<Long> fixasIds = reservasFixas.stream()
+                .map(Reserva::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // Buscar exceções em lote (se houver IDs)
+        List<ReservaFixaExcecao> excecoes = fixasIds.isEmpty()
+                ? Collections.emptyList()
+                : excecaoRepo.findByReservaFixaIdInAndDataBetween(fixasIds, periodStart, periodEnd);
+
+        // Montar mapa: fixaId -> Set<LocalDate> com datas que possuem exceção
+        Map<Long, Set<LocalDate>> excecoesMap = new HashMap<>();
+        for (ReservaFixaExcecao ex : excecoes) {
+            Long idFixa = ex.getReservaFixa().getId();
+            excecoesMap.computeIfAbsent(idFixa, k -> new HashSet<>()).add(ex.getData());
+        }
+
+        // Iterar cada reserva fixa e gerar ocorrências (pulando datas com exceção)
         for (Reserva fixa : reservasFixas) {
 
             if (fixa.getDiaSemana() == null || fixa.getHoraInicio() == null || fixa.getHoraFim() == null) {
@@ -393,16 +471,24 @@ public class ReservaService {
                 int diaAtual = current.getDayOfWeek().getValue(); // 1=segunda ... 7=domingo
 
                 if (diaAtual == fixa.getDiaSemana()) {
-                    Reserva r = new Reserva();
-                    r.setId(fixa.getId()); // reserva gerada dinamicamente
-                    r.setUsuario(fixa.getUsuario());
-                    r.setLaboratorio(fixa.getLaboratorio());
-                    r.setDataInicio(LocalDateTime.of(current, fixa.getHoraInicio()));
-                    r.setDataFim(LocalDateTime.of(current, fixa.getHoraFim()));
-                    r.setTipo(TipoReserva.FIXA);
-                    r.setSemestre(fixa.getSemestre());
-
-                    resultado.add(r);
+                    // verifica se existe exceção para esta fixa nesta data
+                    Set<LocalDate> datasExcluidas = excecoesMap.getOrDefault(fixa.getId(), Collections.emptySet());
+                    if (datasExcluidas.contains(current)) {
+                        // ocorrência cancelada/exceção -> pular
+                        System.out.println(
+                                "⛔ Ocorrência fixa pulada por exceção -> fixaId=" + fixa.getId() + " date=" + current);
+                    } else {
+                        Reserva r = new Reserva();
+                        r.setId(fixa.getId()); // id informativo da fixa
+                        r.setUsuario(fixa.getUsuario());
+                        r.setLaboratorio(fixa.getLaboratorio());
+                        r.setDataInicio(LocalDateTime.of(current, fixa.getHoraInicio()));
+                        r.setDataFim(LocalDateTime.of(current, fixa.getHoraFim()));
+                        r.setTipo(TipoReserva.FIXA);
+                        r.setSemestre(fixa.getSemestre());
+                        r.setAtivo(true);
+                        resultado.add(r);
+                    }
                 }
 
                 current = current.plusDays(1);
@@ -413,6 +499,71 @@ public class ReservaService {
         System.out.println("📊 Total de reservas FIXAS retornadas no período: " + resultado.size());
 
         return resultado;
+    }
+
+    @Transactional
+    public ReservaFixaExcecao cancelarOcorrenciaFixa(Long fixaId, LocalDate data, String motivo,
+            Usuario usuarioLogado) {
+        Reserva fixa = reservaRepository.findById(fixaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva fixa não encontrada: " + fixaId));
+
+        // permissão: ADMIN ou dono da reserva fixa
+        boolean isAdmin = usuarioLogado.getRoles().stream().anyMatch(r -> r.equalsIgnoreCase("ADMIN"));
+        boolean isOwner = fixa.getUsuario() != null && usuarioLogado.getId().equals(fixa.getUsuario().getId());
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("Sem permissão para cancelar essa ocorrência");
+        }
+
+        var opt = excecaoRepo.findByReservaFixaIdAndData(fixaId, data);
+        ReservaFixaExcecao ex;
+        if (opt.isPresent()) {
+            ex = opt.get();
+            ex.setTipo("CANCELADA");
+            ex.setMotivo(motivo);
+            ex.setUsuarioId(usuarioLogado.getId());
+            ex = excecaoRepo.save(ex);
+        } else {
+            ex = new ReservaFixaExcecao();
+            ex.setReservaFixa(fixa);
+            ex.setData(data);
+            ex.setTipo("CANCELADA");
+            ex.setMotivo(motivo);
+            ex.setUsuarioId(usuarioLogado.getId());
+            ex = excecaoRepo.save(ex);
+        }
+        return ex;
+    }
+
+    @Transactional
+    public void removerExcecaoOcorrenciaFixa(Long fixaId, LocalDate data, Usuario usuarioLogado) {
+        Reserva fixa = reservaRepository.findById(fixaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva fixa não encontrada: " + fixaId));
+
+        boolean isAdmin = usuarioLogado.getRoles().stream().anyMatch(r -> r.equalsIgnoreCase("ADMIN"));
+        boolean isOwner = fixa.getUsuario() != null && usuarioLogado.getId().equals(fixa.getUsuario().getId());
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("Sem permissão para restaurar essa ocorrência");
+        }
+
+        var opt = excecaoRepo.findByReservaFixaIdAndData(fixaId, data);
+        opt.ifPresent(excecaoRepo::delete);
+    }
+
+    @Transactional
+    public void criarExcecaoCancelamento(ReservaFixaExcecaoDTO dto, Usuario usuarioLogado) {
+        Reserva reservaFixa = findById(dto.getReservaFixaId());
+        if (reservaFixa == null || reservaFixa.getTipo() != TipoReserva.FIXA) {
+            throw new IllegalArgumentException("Reserva fixa não encontrada");
+        }
+
+        ReservaFixaExcecao excecao = new ReservaFixaExcecao();
+        excecao.setReservaFixa(reservaFixa);
+        excecao.setData(dto.getData());
+        excecao.setTipo("CANCELADA");
+        excecao.setMotivo(dto.getMotivo());
+        excecao.setUsuarioId(usuarioLogado.getId());
+
+        excecaoRepo.save(excecao);
     }
 
 }
