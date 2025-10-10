@@ -13,10 +13,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.uespi.reservalab.dto.ReservaFixaDTO;
+import com.uespi.reservalab.dto.ReservaFixaExcecaoDTO;
 import com.uespi.reservalab.dto.ReservaNormalDTO;
+import com.uespi.reservalab.enums.TipoReserva;
 import com.uespi.reservalab.models.Laboratorio;
 import com.uespi.reservalab.models.Reserva;
+import com.uespi.reservalab.models.ReservaFixaExcecao;
 import com.uespi.reservalab.models.Usuario;
+import com.uespi.reservalab.repositories.ReservaFixaExcecaoRepository;
 import com.uespi.reservalab.services.ReservaService;
 import com.uespi.reservalab.services.UsuarioService;
 import com.uespi.reservalab.utils.Utils;
@@ -31,6 +35,8 @@ public class ReservaController {
     private final ReservaService reservaService;
 
     private final UsuarioService usuarioService;
+
+    private final ReservaFixaExcecaoRepository excecaoRepository;
 
     @GetMapping("/usuario/logado/info")
     public ResponseEntity<String> infoUsuarioLogado() {
@@ -207,6 +213,55 @@ public class ReservaController {
         List<Reserva> reservas = reservaService.buscarReservasFixasPorPeriodo(laboratorio, inicio, fim);
 
         return ResponseEntity.ok(reservas);
+    }
+
+    @PostMapping("/fixa/{id}/excecoes")
+    public ResponseEntity<ReservaFixaExcecao> criarExcecao(
+            @PathVariable Long id,
+            @RequestBody ReservaFixaExcecao excecaoDTO) {
+
+        Reserva fixa = reservaService.findById(id);
+        if (fixa == null || fixa.getTipo() != TipoReserva.FIXA) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Configura a exceção
+        ReservaFixaExcecao excecao = new ReservaFixaExcecao();
+        excecao.setReservaFixa(fixa);
+        excecao.setData(excecaoDTO.getData());
+        excecao.setTipo(excecaoDTO.getTipo()); // ex: "CANCELADA"
+        excecao.setMotivo(excecaoDTO.getMotivo());
+
+        // Pegar usuário logado (opcional)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            Usuario usuarioLogado = usuarioService.obterUsuarioPorLogin(authentication.getName());
+            excecao.setUsuarioId(usuarioLogado.getId());
+        }
+
+        ReservaFixaExcecao salva = excecaoRepository.save(excecao);
+        return ResponseEntity.ok(salva);
+    }
+
+    @DeleteMapping("/fixa/excecoes/{excecaoId}")
+    public ResponseEntity<Void> deletarExcecao(@PathVariable Long excecaoId) {
+        if (!excecaoRepository.existsById(excecaoId)) {
+            return ResponseEntity.notFound().build();
+        }
+        excecaoRepository.deleteById(excecaoId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/fixa/excecao/cancelar")
+    public ResponseEntity<Void> cancelarReservaFixaExcecao(@RequestBody ReservaFixaExcecaoDTO dto) {
+        // Pega usuário logado
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Usuario usuarioLogado = usuarioService.obterUsuarioPorLogin(auth.getName());
+
+        // Chama o service que cria a exceção de cancelamento
+        reservaService.criarExcecaoCancelamento(dto, usuarioLogado);
+
+        return ResponseEntity.ok().build();
     }
 
 }

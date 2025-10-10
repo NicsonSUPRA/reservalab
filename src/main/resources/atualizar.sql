@@ -129,6 +129,28 @@ CREATE INDEX idx_reserva_fixa_lab_dia ON reserva_fixa (laboratorio_id, dia_seman
 
 CREATE INDEX idx_reserva_fixa_usuario ON reserva_fixa (usuario_id);
 
+-- Sequence para PK (Postgres)
+CREATE SEQUENCE seq_reserva_fixa_excecao START 1 INCREMENT 1 MINVALUE 1;
+
+-- Tabela de exceções para reservas fixas
+CREATE TABLE reserva_fixa_excecao (
+    id BIGINT NOT NULL DEFAULT nextval('seq_reserva_fixa_excecao'),
+    reserva_fixa_id BIGINT NOT NULL,
+    data DATE NOT NULL,
+    tipo VARCHAR(50) NOT NULL,          -- exemplos: 'CANCELADA', 'BLOQUEADA'
+    motivo VARCHAR(1000),
+    usuario_id UUID,
+    criado_em TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT pk_reserva_fixa_excecao PRIMARY KEY (id),
+    CONSTRAINT uk_reserva_fixa_data UNIQUE (reserva_fixa_id, data),
+    CONSTRAINT fk_reserva_fixa FOREIGN KEY (reserva_fixa_id) REFERENCES reserva (id) ON DELETE CASCADE,
+    CONSTRAINT fk_reserva_fixa_usuario FOREIGN KEY (usuario_id) REFERENCES usuario (id)
+);
+
+-- Índice para buscas por reserva_fixa_id e intervalo de datas (melhora performance)
+CREATE INDEX idx_reserva_fixa_excecao_reserva_data ON reserva_fixa_excecao (reserva_fixa_id, data);
+
+
 --UTIL PARA TRANSAÇÕES DIRETAS NO BANCO DE DADOS DE PRODUÇÃO
 begin;
 
