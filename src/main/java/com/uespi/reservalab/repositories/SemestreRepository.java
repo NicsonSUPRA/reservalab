@@ -1,5 +1,6 @@
 package com.uespi.reservalab.repositories;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,4 +13,5 @@ public interface SemestreRepository extends JpaRepository<Semestre, Long> {
 
     Optional<Semestre> findByAnoAndPeriodo(int ano, int periodo);
 
+    Optional<Semestre> findByDataInicioLessThanEqualAndDataFimGreaterThanEqual(LocalDateTime inicio, LocalDateTime fim);
 }

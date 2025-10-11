@@ -1,5 +1,6 @@
 package com.uespi.reservalab.services;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -76,4 +77,10 @@ public class SemestreService {
                 .filter(s -> (periodo == null || s.getPeriodo().equals(periodo)))
                 .collect(Collectors.toList());
     }
+
+    public Semestre buscarPorData(LocalDateTime data) {
+        return semestreRepository.findByDataInicioLessThanEqualAndDataFimGreaterThanEqual(data, data)
+                .orElse(null);
+    }
+
 }
