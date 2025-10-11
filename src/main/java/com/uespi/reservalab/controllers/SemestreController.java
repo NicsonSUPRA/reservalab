@@ -1,10 +1,12 @@
 package com.uespi.reservalab.controllers;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -97,4 +99,21 @@ public class SemestreController {
         List<Semestre> semestres = semestreService.pesquisarSemestres(descricao, ano, periodo);
         return ResponseEntity.ok(semestres);
     }
+
+    @GetMapping("/por-data")
+    public ResponseEntity<?> buscarSemestrePorData(
+            @RequestParam("data") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime data) {
+        try {
+            Semestre semestre = semestreService.buscarPorData(data);
+            if (semestre == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("mensagem", "Nenhum semestre encontrado para a data informada."));
+            }
+            return ResponseEntity.ok(semestre);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("erro", "Erro ao buscar semestre: " + e.getMessage()));
+        }
+    }
+
 }
